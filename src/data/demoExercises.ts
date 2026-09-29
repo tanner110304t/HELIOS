@@ -1,0 +1,373 @@
+import type { Exercise } from "@/types/domain";
+
+/**
+ * Exercise library for the demo. Small on purpose.
+ *
+ * equipmentIds      → every listed piece must be present and available.
+ * anyOfEquipmentIds → at least one listed piece must be available
+ *                     (interchangeable units, e.g. two treadmills).
+ *
+ * Within each movement category, order matters: the workout engine walks this
+ * list in order, so earlier entries are preferred at the same difficulty.
+ */
+const TREADMILLS = ["eq_treadmill_1", "eq_treadmill_2"];
+
+export const demoExercises: Exercise[] = [
+  // Horizontal push
+  {
+    id: "ex_smith_incline_press",
+    name: "Smith Machine Incline Press",
+    equipmentIds: ["eq_smith", "eq_benches"],
+    movementCategory: "horizontal-push",
+    difficulty: "intermediate",
+    instruction: "Bench at 30°. Lower the bar to your upper chest, then press up.",
+  },
+  {
+    id: "ex_db_bench_press",
+    name: "Dumbbell Bench Press",
+    equipmentIds: ["eq_dumbbells", "eq_benches"],
+    movementCategory: "horizontal-push",
+    difficulty: "beginner",
+    instruction: "Feet flat, shoulder blades pinned. Lower to chest level and press.",
+  },
+  {
+    id: "ex_machine_chest_press",
+    name: "Machine Chest Press",
+    equipmentIds: ["eq_chest_press"],
+    movementCategory: "horizontal-push",
+    difficulty: "beginner",
+    instruction: "Handles at mid-chest. Press forward, pause, return slowly.",
+  },
+  {
+    id: "ex_smith_bench_press",
+    name: "Smith Machine Bench Press",
+    equipmentIds: ["eq_smith", "eq_benches"],
+    movementCategory: "horizontal-push",
+    difficulty: "advanced",
+    instruction: "Flat bench. Touch the lower chest lightly, drive up with control.",
+  },
+  {
+    id: "ex_cable_fly",
+    name: "Standing Cable Fly",
+    equipmentIds: ["eq_functional_trainer"],
+    movementCategory: "horizontal-push",
+    difficulty: "beginner",
+    instruction: "Pulleys at shoulder height. Bring handles together in a wide arc.",
+  },
+
+  // Vertical push
+  {
+    id: "ex_machine_shoulder_press",
+    name: "Machine Shoulder Press",
+    equipmentIds: ["eq_shoulder_press"],
+    movementCategory: "vertical-push",
+    difficulty: "beginner",
+    instruction: "Back on the pad. Press overhead without shrugging.",
+  },
+  {
+    id: "ex_db_shoulder_press",
+    name: "Seated Dumbbell Shoulder Press",
+    equipmentIds: ["eq_dumbbells", "eq_benches"],
+    movementCategory: "vertical-push",
+    difficulty: "intermediate",
+    instruction: "Bench upright. Press from ear height to just short of lockout.",
+  },
+  {
+    id: "ex_smith_overhead_press",
+    name: "Smith Machine Overhead Press",
+    equipmentIds: ["eq_smith", "eq_benches"],
+    movementCategory: "vertical-push",
+    difficulty: "advanced",
+    instruction: "Seated, bar starting at chin height. Press straight up.",
+  },
+
+  // Vertical pull
+  {
+    id: "ex_lat_pulldown",
+    name: "Lat Pulldown",
+    equipmentIds: ["eq_lat_pulldown"],
+    movementCategory: "vertical-pull",
+    difficulty: "beginner",
+    instruction: "Pull the bar to your upper chest, elbows driving down.",
+  },
+  {
+    id: "ex_close_grip_pulldown",
+    name: "Close-Grip Pulldown",
+    equipmentIds: ["eq_lat_pulldown"],
+    movementCategory: "vertical-pull",
+    difficulty: "intermediate",
+    instruction: "Narrow handle. Lean back slightly and pull to your sternum.",
+  },
+  {
+    id: "ex_single_arm_cable_pulldown",
+    name: "Half-Kneeling Single-Arm Pulldown",
+    equipmentIds: ["eq_functional_trainer"],
+    movementCategory: "vertical-pull",
+    difficulty: "advanced",
+    instruction: "Pulley high. Pull the handle to your side, keep hips square.",
+  },
+  {
+    id: "ex_straight_arm_pulldown",
+    name: "Straight-Arm Cable Pulldown",
+    equipmentIds: ["eq_functional_trainer"],
+    movementCategory: "vertical-pull",
+    difficulty: "beginner",
+    instruction: "Pulley high, arms long. Sweep the bar down to your thighs.",
+  },
+
+  // Horizontal pull
+  {
+    id: "ex_seated_cable_row",
+    name: "Seated Cable Row",
+    equipmentIds: ["eq_seated_row"],
+    movementCategory: "horizontal-pull",
+    difficulty: "beginner",
+    instruction: "Sit tall. Pull to your lower ribs and squeeze your shoulder blades.",
+  },
+  {
+    id: "ex_one_arm_db_row",
+    name: "One-Arm Dumbbell Row",
+    equipmentIds: ["eq_dumbbells", "eq_benches"],
+    movementCategory: "horizontal-pull",
+    difficulty: "intermediate",
+    instruction: "Hand and knee on the bench. Row the dumbbell to your hip.",
+  },
+  {
+    id: "ex_chest_supported_row",
+    name: "Chest-Supported Dumbbell Row",
+    equipmentIds: ["eq_dumbbells", "eq_benches"],
+    movementCategory: "horizontal-pull",
+    difficulty: "beginner",
+    instruction: "Chest on a 30° bench. Row both dumbbells, pause at the top.",
+  },
+  {
+    id: "ex_smith_bent_row",
+    name: "Smith Machine Bent-Over Row",
+    equipmentIds: ["eq_smith"],
+    movementCategory: "horizontal-pull",
+    difficulty: "advanced",
+    instruction: "Hinge to about 45°. Row the bar to your lower chest.",
+  },
+  {
+    id: "ex_standing_cable_row",
+    name: "Standing Cable Row",
+    equipmentIds: ["eq_functional_trainer"],
+    movementCategory: "horizontal-pull",
+    difficulty: "beginner",
+    instruction: "Pulleys at chest height. Row both handles back, elbows close.",
+  },
+
+  // Knee dominant
+  {
+    id: "ex_leg_press",
+    name: "Leg Press",
+    equipmentIds: ["eq_leg_press"],
+    movementCategory: "knee-dominant",
+    difficulty: "beginner",
+    instruction: "Lower until knees reach about 90°, then press through your heels.",
+  },
+  {
+    id: "ex_leg_extension",
+    name: "Leg Extension",
+    equipmentIds: ["eq_leg_extension"],
+    movementCategory: "knee-dominant",
+    difficulty: "beginner",
+    instruction: "Extend fully, pause for a beat, lower slowly.",
+  },
+  {
+    id: "ex_goblet_squat",
+    name: "Dumbbell Goblet Squat",
+    equipmentIds: ["eq_dumbbells"],
+    movementCategory: "knee-dominant",
+    difficulty: "beginner",
+    instruction: "Hold one dumbbell at your chest. Sit down between your heels.",
+  },
+  {
+    id: "ex_smith_squat",
+    name: "Smith Machine Squat",
+    equipmentIds: ["eq_smith"],
+    movementCategory: "knee-dominant",
+    difficulty: "intermediate",
+    instruction: "Feet slightly forward of the bar. Squat to parallel.",
+  },
+  {
+    id: "ex_bulgarian_split_squat",
+    name: "Dumbbell Bulgarian Split Squat",
+    equipmentIds: ["eq_dumbbells", "eq_benches"],
+    movementCategory: "knee-dominant",
+    difficulty: "advanced",
+    instruction: "Rear foot on the bench. Lower straight down on the front leg.",
+  },
+  {
+    id: "ex_db_reverse_lunge",
+    name: "Dumbbell Reverse Lunge",
+    equipmentIds: ["eq_dumbbells"],
+    movementCategory: "knee-dominant",
+    difficulty: "intermediate",
+    instruction: "Step back and lower until both knees are near 90°. Alternate legs.",
+  },
+
+  // Hip hinge / hamstrings
+  {
+    id: "ex_seated_leg_curl",
+    name: "Seated Leg Curl",
+    equipmentIds: ["eq_leg_curl"],
+    movementCategory: "hip-hinge",
+    difficulty: "beginner",
+    instruction: "Curl the pad under the seat, then return slowly.",
+  },
+  {
+    id: "ex_db_rdl",
+    name: "Dumbbell Romanian Deadlift",
+    equipmentIds: ["eq_dumbbells"],
+    movementCategory: "hip-hinge",
+    difficulty: "intermediate",
+    instruction: "Soft knees. Push hips back until you feel your hamstrings, then stand.",
+  },
+  {
+    id: "ex_cable_pull_through",
+    name: "Cable Pull-Through",
+    equipmentIds: ["eq_functional_trainer"],
+    movementCategory: "hip-hinge",
+    difficulty: "intermediate",
+    instruction: "Rope on a low pulley between your legs. Hinge back, drive hips forward.",
+  },
+  {
+    id: "ex_smith_rdl",
+    name: "Smith Machine Romanian Deadlift",
+    equipmentIds: ["eq_smith"],
+    movementCategory: "hip-hinge",
+    difficulty: "advanced",
+    instruction: "Bar close to your legs. Hinge to mid-shin with a flat back.",
+  },
+  {
+    id: "ex_db_hip_thrust",
+    name: "Dumbbell Hip Thrust",
+    equipmentIds: ["eq_dumbbells", "eq_benches"],
+    movementCategory: "hip-hinge",
+    difficulty: "beginner",
+    instruction: "Upper back on the bench, dumbbell on hips. Drive up and squeeze.",
+  },
+
+  // Shoulder isolation
+  {
+    id: "ex_db_lateral_raise",
+    name: "Dumbbell Lateral Raise",
+    equipmentIds: ["eq_dumbbells"],
+    movementCategory: "shoulder-isolation",
+    difficulty: "beginner",
+    instruction: "Raise to shoulder height with a slight bend in the elbows.",
+  },
+  {
+    id: "ex_cable_lateral_raise",
+    name: "Cable Lateral Raise",
+    equipmentIds: ["eq_functional_trainer"],
+    movementCategory: "shoulder-isolation",
+    difficulty: "intermediate",
+    instruction: "Low pulley, cross-body handle. Raise out to the side.",
+  },
+  {
+    id: "ex_face_pull",
+    name: "Cable Face Pull",
+    equipmentIds: ["eq_functional_trainer"],
+    movementCategory: "shoulder-isolation",
+    difficulty: "beginner",
+    instruction: "Rope at eye level. Pull toward your face, elbows high.",
+  },
+
+  // Arms
+  {
+    id: "ex_cable_pushdown",
+    name: "Cable Triceps Pushdown",
+    equipmentIds: ["eq_functional_trainer"],
+    movementCategory: "arms",
+    difficulty: "beginner",
+    instruction: "Elbows pinned at your sides. Press down to full extension.",
+  },
+  {
+    id: "ex_db_curl",
+    name: "Dumbbell Biceps Curl",
+    equipmentIds: ["eq_dumbbells"],
+    movementCategory: "arms",
+    difficulty: "beginner",
+    instruction: "Curl without swinging. Lower all the way down.",
+  },
+  {
+    id: "ex_incline_db_curl",
+    name: "Incline Dumbbell Curl",
+    equipmentIds: ["eq_dumbbells", "eq_benches"],
+    movementCategory: "arms",
+    difficulty: "intermediate",
+    instruction: "Bench at 45°, arms hanging back. Curl up slowly.",
+  },
+
+  // Core
+  {
+    id: "ex_pallof_press",
+    name: "Cable Pallof Press",
+    equipmentIds: ["eq_functional_trainer"],
+    movementCategory: "core",
+    difficulty: "beginner",
+    instruction: "Stand side-on to the pulley. Press straight out and resist the rotation.",
+  },
+  {
+    id: "ex_farmer_carry",
+    name: "Dumbbell Farmer Carry",
+    equipmentIds: ["eq_dumbbells"],
+    movementCategory: "core",
+    difficulty: "beginner",
+    instruction: "Heavy dumbbell in each hand. Walk tall for the set distance.",
+  },
+  {
+    id: "ex_cable_woodchop",
+    name: "Cable Woodchop",
+    equipmentIds: ["eq_functional_trainer"],
+    movementCategory: "core",
+    difficulty: "intermediate",
+    instruction: "High pulley. Rotate diagonally down across your body.",
+  },
+
+  // Cardio
+  {
+    id: "ex_bike_easy",
+    name: "Easy Spin",
+    equipmentIds: ["eq_bikes"],
+    movementCategory: "cardio",
+    difficulty: "beginner",
+    instruction: "Low resistance, conversational pace.",
+  },
+  {
+    id: "ex_elliptical_steady",
+    name: "Elliptical Steady Pace",
+    equipmentIds: ["eq_ellipticals"],
+    movementCategory: "cardio",
+    difficulty: "beginner",
+    instruction: "Moderate resistance, steady stride, use the handles.",
+  },
+  {
+    id: "ex_treadmill_incline_walk",
+    name: "Incline Walk",
+    equipmentIds: [],
+    anyOfEquipmentIds: TREADMILLS,
+    movementCategory: "cardio",
+    difficulty: "beginner",
+    instruction: "Brisk walk at 6–10% incline. No holding the rails.",
+  },
+  {
+    id: "ex_bike_intervals",
+    name: "Bike Intervals",
+    equipmentIds: ["eq_bikes"],
+    movementCategory: "cardio",
+    difficulty: "intermediate",
+    instruction: "30 sec hard, 60 sec easy. Repeat.",
+  },
+  {
+    id: "ex_treadmill_intervals",
+    name: "Treadmill Run Intervals",
+    equipmentIds: [],
+    anyOfEquipmentIds: TREADMILLS,
+    movementCategory: "cardio",
+    difficulty: "advanced",
+    instruction: "1 min fast run, 1 min walk. Repeat.",
+  },
+];

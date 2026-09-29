@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+/*
+ * Helios design tokens.
+ * Midnight ink on warm paper, with a restrained solar amber used sparingly.
+ * The app is intentionally light-only so a demo looks identical on every device.
+ */
+@theme {
+  --color-ink: #15171b;
+  --color-ink-2: #2a2d33;
+  --color-ink-3: #3d4149;
+  --color-paper: #f5f3ee;
+  --color-paper-2: #ece9e2;
+  --color-surface: #ffffff;
+  --color-line: #e3dfd6;
+  --color-line-strong: #cbc6bb;
+  --color-muted: #625e57;
+  --color-faint: #8b877e;
+
+  --color-sun: #b37b22;
+  --color-sun-ink: #86590f;
+  --color-sun-soft: #f5ead6;
+  --color-sun-glow: #e8b75a;
+
+  --color-ok: #2c6a48;
+  --color-ok-soft: #e2efe6;
+  --color-warn: #9a4519;
+  --color-warn-soft: #f7e6da;
+  --color-down: #8a3a3a;
+  --color-down-soft: #f5e1e1;
+
+  /* Chart series (validated: CVD-safe pair, ≥3:1 on white) */
+  --color-series-1: #3f6fa6;
+  --color-series-2: #b37b22;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --shadow-card: 0 1px 0 rgb(21 23 27 / 0.03), 0 1px 2px rgb(21 23 27 / 0.04);
+  --shadow-lift: 0 1px 2px rgb(21 23 27 / 0.05), 0 8px 24px -12px rgb(21 23 27 / 0.18);
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+}
+
+/* Visible, consistent keyboard focus everywhere. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-sun);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Small uppercase label used across Helios surfaces. */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* Faint architectural grid used behind hero areas. */
+.grid-backdrop {
+  background-image:
+    linear-gradient(to right, rgb(21 23 27 / 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(21 23 27 / 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
