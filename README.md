@@ -36,8 +36,9 @@ npm run build
 | `/g/solstice-lofts/equipment` | Equipment directory |
 | `/g/solstice-lofts/equipment/[slug]` | Machine page |
 | `/g/solstice-lofts/report/[slug]` | Report-a-problem flow |
+| `/g/solstice-lofts/history` | My history — weights and reps logged on this device |
 
-The dark **Demo Mode** bar (and a floating control on laptop-width resident pages) is for presenting only. Phones never see it.
+The dark **Demo Mode** bar is for presenting only: navigation, a **Guide** (the 5-minute walkthrough as a checklist) and **Reset demo**. On resident pages a small floating control appears only in a browser that has opened a presenter page — never on a phone that just scanned the QR, and never inside the phone frame. See **[DEMO_RUNBOOK.md](DEMO_RUNBOOK.md)** for the meeting script.
 
 ## Demo data
 
@@ -65,6 +66,24 @@ Time assumptions (estimates, not measurements): 40 sec per set (70 sec for one-s
 
 Same inputs → same workout. A different room → a different workout.
 
+## Resident workout, weight log and history
+
+- **Help me get started** gives a 30-minute beginner plan in one tap; the welcome screen also offers Learn a machine, Report a problem and My history.
+- The active plan (swaps, check-offs, busy machines, logged sets) is **saved on the resident's device**, so reloading or leaving to look at a machine keeps their place. The welcome screen offers **Resume**; the workout page offers **Start over**.
+- **Log weights**: weight (lb) and reps per set, with last session's numbers as placeholders and **"Last time: 70 lb × 10"** on the card. My history lists past sessions; each machine page shows "Your history on this machine". Nothing about body weight or health is collected, and operators never see any of it.
+- **Try another exercise** vs **"[machine] is busy"**: the busy path only offers options that don't use that machine; if there are none, the resident can do it later or skip it.
+- After a completed plan: an optional, anonymous **"Did this plan help you use the gym today?"** (Yes / Somewhat / No / Skip, plus tap-to-pick reasons).
+
+Logic: `src/lib/demo/resident.ts` (pure, tested). Storage: `src/lib/demo/client.ts`.
+
+## Operator dashboard
+
+Top to bottom: **This demo session** (live counts from this browser, kept separate from the sample), **Needs attention**, **Is the digital gym useful?** (four measures, each with its counts), **Where residents get stuck**, **What to do next** (rules in `src/lib/insights.ts` — each names the signal, implication and action; labelled live or sample), then equipment issues, engagement detail, inventory and metric definitions.
+
+## Dealer view and pilot
+
+Install-list mapping, a proposed **who does what** in a pilot, the live **service brief**, and a **one-property pilot checklist** that can be ticked, copied or printed. Nothing is submitted anywhere.
+
 ## Equipment service loop
 
 All changes made during a demo live in one small versioned record in the browser (`src/lib/demo/`):
@@ -90,7 +109,8 @@ Note: on `localhost` the QR can't be opened by a phone — use the deployed URL 
 
 ## What is intentionally fake
 
-- **Analytics** — every number is fictional, labeled Demo Data, over a fixed sample period (Aug 31 – Sep 27, 2026)
+- **Analytics and feedback** — every number in the sample period is fictional and labeled Demo Data (Aug 31 – Sep 27, 2026); only the "This demo session" strip is live
+- **Resident history** — saved in one browser; no accounts, no sync between devices
 - **Property** — Solstice Lofts does not exist
 - **Equipment data** — generic, hand-written; setup copy is original placeholder text
 - **Issue routing and service status** — nothing is emailed or sent anywhere; reports and status changes live in this browser only

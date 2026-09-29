@@ -5,6 +5,8 @@ import {
   equipmentPageViews,
   getAnalyticsSummary,
   goalMix,
+  sampleBusyAlternatives,
+  sampleFeedback,
   weeklyEngagement,
 } from "@/data/demoAnalytics";
 import { DEMO_FACILITY_SLUG, getEquipment, getFacilityBySlug } from "@/data/repository";
@@ -24,6 +26,8 @@ export default function OperatorPage() {
         durationMix,
         goalMix,
         pageViews: equipmentPageViews,
+        feedback: sampleFeedback,
+        busyByMachine: sampleBusyAlternatives,
       }}
     />
   );

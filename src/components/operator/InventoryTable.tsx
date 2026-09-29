@@ -78,7 +78,7 @@ export function InventoryTable({
 }) {
   const units = equipment.reduce((a, e) => a + e.quantity, 0);
   return (
-    <section aria-labelledby="inventory" className="mt-10">
+    <section id="inventory-section" aria-labelledby="inventory" className="mt-10 scroll-mt-14">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 id="inventory" className="text-lg font-semibold tracking-[-0.01em]">

@@ -2,16 +2,130 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/cn";
 import { resetDemo } from "@/lib/demo/client";
 
 /**
  * Presenter-only navigation. Never part of the resident product:
- * - on /demo pages it is a slim bar across the top
- * - on resident pages (/g/...) it is a small floating control shown only on
- *   laptop-width screens, so a phone that scanned the QR never sees it
+ * - on presenter pages (/, /demo/...) it is a slim bar across the top
+ * - on resident pages (/g/...) a small floating control appears only in a
+ *   browser that has opened a presenter page this session (the presenter's
+ *   laptop), never on a phone that just scanned the QR, and never inside the
+ *   phone frame on /demo/resident
  */
+
+const PRESENTER_KEY = "helios-presenter";
+
+function markPresenter() {
+  try {
+    window.sessionStorage.setItem(PRESENTER_KEY, "1");
+  } catch {
+    // ignore
+  }
+}
+
+function isPresenterBrowser() {
+  try {
+    return window.self === window.top && window.sessionStorage.getItem(PRESENTER_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+const steps: { title: string; body: string; href: string }[] = [
+  { title: "Resident starts", body: "In the phone frame, tap Help me get started.", href: "/demo/resident" },
+  {
+    title: "Resident gets help",
+    body: "Open a machine and come back — the place is kept. Tap “[machine] is busy” and pick an alternative.",
+    href: "/demo/resident",
+  },
+  {
+    title: "Resident reports & gives feedback",
+    body: "Report a problem on a machine. Finish the plan and answer “Did this plan help?”.",
+    href: "/demo/resident",
+  },
+  {
+    title: "Operator acts",
+    body: "Show This demo session updating. Acknowledge the new report with an update; take the machine out of service.",
+    href: "/demo/operator",
+  },
+  {
+    title: "Resident sees the result",
+    body: "Open that machine in the phone frame: status and update show. Then resolve it and return it to service.",
+    href: "/demo/resident",
+  },
+  {
+    title: "Dealer & pilot close",
+    body: "Walk the install-list mapping, copy a service brief, tick through the pilot checklist.",
+    href: "/demo/dealer",
+  },
+];
+
+/** A short presenter checklist for the ~5-minute walkthrough. Ticks last for this browser tab only. */
+function GuideMenu() {
+  const [open, setOpen] = useState(false);
+  const [done, setDone] = useState<number[]>([]);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="demo-guide"
+        onClick={() => setOpen((v) => !v)}
+        className="whitespace-nowrap rounded-md px-2.5 py-1 text-[13px] text-paper/80 ring-1 ring-inset ring-paper/20 hover:bg-paper/10"
+      >
+        Guide
+      </button>
+      {open && (
+        <div
+          id="demo-guide"
+          className="absolute right-0 top-full mt-2 w-[22rem] max-w-[calc(100vw-2rem)] rounded-xl bg-ink p-4 text-paper shadow-lift ring-1 ring-paper/10"
+        >
+          <div className="flex items-baseline justify-between">
+            <p className="text-sm font-semibold">5-minute walkthrough</p>
+            <button type="button" onClick={() => setOpen(false)} className="text-xs text-paper/60 hover:text-paper">
+              Close
+            </button>
+          </div>
+          <p className="mt-0.5 text-xs text-paper/60">Press Reset demo first so every meeting starts the same way.</p>
+          <ol className="mt-3 space-y-2.5">
+            {steps.map((st, i) => {
+              const on = done.includes(i);
+              return (
+                <li key={st.title} className="flex gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    aria-label={`Step ${i + 1} done`}
+                    onChange={() => setDone(on ? done.filter((d) => d !== i) : [...done, i])}
+                    className="mt-0.5 size-4 shrink-0 accent-[var(--color-sun-glow)]"
+                  />
+                  <div className={cn("min-w-0", on && "opacity-50")}>
+                    <Link href={st.href} onClick={() => setOpen(false)} className="text-[13px] font-semibold hover:underline">
+                      {i + 1}. {st.title}
+                    </Link>
+                    <p className="text-xs leading-relaxed text-paper/70">{st.body}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+          <p className="mt-3 border-t border-paper/10 pt-2.5 text-[11px] leading-relaxed text-paper/55">
+            Phones that scan the QR keep their own separate data. Use the phone frame on this laptop for the connected
+            resident → operator story.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const links = [
   { href: "/", label: "Overview", match: (p: string) => p === "/" },
@@ -63,6 +177,7 @@ function ResetDemoButton({ className }: { className?: string }) {
 
 export function DemoModeBar() {
   const pathname = usePathname() ?? "/";
+  useEffect(markPresenter, []);
   return (
     <nav aria-label="Demo navigation" className="sticky top-0 z-40 bg-ink text-paper print:hidden">
       <div className="mx-auto flex h-10 max-w-6xl items-center gap-4 px-4 sm:px-6">
@@ -86,6 +201,7 @@ export function DemoModeBar() {
             );
           })}
         </ul>
+        <GuideMenu />
         <ResetDemoButton className="shrink-0" />
       </div>
     </nav>
@@ -94,8 +210,14 @@ export function DemoModeBar() {
 
 export function DemoFloatingControl() {
   const pathname = usePathname() ?? "/";
+  const presenter = useSyncExternalStore(
+    () => () => {},
+    isPresenterBrowser,
+    () => false,
+  );
+  if (!presenter) return null;
   return (
-    <details className="group fixed bottom-5 right-5 z-50 hidden md:block print:hidden">
+    <details className="group fixed bottom-5 right-5 z-50 print:hidden">
       <summary className="flex cursor-pointer list-none items-center gap-2 rounded-full bg-ink px-4 py-2.5 shadow-lift [&::-webkit-details-marker]:hidden">
         <DemoLabel />
       </summary>

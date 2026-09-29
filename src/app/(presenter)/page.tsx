@@ -57,8 +57,8 @@ export default function MeetingOverview() {
               Turn the gym you install into a digital experience residents can actually use.
             </h1>
             <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-ink-3">
-              The dealer builds the physical gym. Helios turns it into a digital one — workouts built from the exact
-              equipment in the room, and visibility for the property team.
+              Help residents use the gym they already have, and give property teams a clear way to see what helps and
+              what needs attention. The dealer builds the physical gym; Helios turns it into a digital one.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <LinkButton href="/demo/resident" size="lg">
@@ -91,6 +91,77 @@ export default function MeetingOverview() {
         </div>
       </section>
 
+      {/* Before / with Helios — the outcome first, the pipeline second */}
+      <section className="mx-auto max-w-6xl px-4 pt-14 sm:px-6" aria-labelledby="change">
+        <h2 id="change" className="eyebrow">
+          What changes in the room
+        </h2>
+        <div className="mt-5 overflow-hidden rounded-2xl bg-surface ring-1 ring-inset ring-line shadow-card">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-line bg-paper/60 text-xs text-muted">
+                <th scope="col" className="w-1/5 px-4 py-2.5 font-medium">Moment</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Today</th>
+                <th scope="col" className="px-4 py-2.5 font-medium text-ink">With Helios</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {[
+                ["A resident walks in", "A room of machines and no guidance", "A plan built from what's in this room, with setup help for each machine"],
+                ["The machine they need is taken", "Wait, or improvise", "Pick an alternative that doesn't need that machine"],
+                ["Something breaks", "\u201cThe machine is broken\u201d \u2014 which one?", "A report with the machine, asset tag and location already attached"],
+                ["The property team wants to know if it's working", "Hearsay, or nothing", "Optional feedback with counts, and a short list of what needs attention"],
+              ].map(([moment, today, withHelios]) => (
+                <tr key={moment} className="align-top">
+                  <th scope="row" className="px-4 py-3 font-semibold">{moment}</th>
+                  <td className="px-4 py-3 text-muted">{today}</td>
+                  <td className="px-4 py-3 text-ink">{withHelios}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-2 text-xs text-muted">
+          Intended benefits to test in a pilot — not measured results.
+        </p>
+
+        <div className="mt-8 grid gap-3 md:grid-cols-3">
+          {[
+            {
+              who: "Residents",
+              what: "Know what to do with the equipment in this room.",
+              href: "/demo/resident",
+              cta: "Resident experience",
+            },
+            {
+              who: "Property teams",
+              what: "See what residents find useful and which machines need attention.",
+              href: "/demo/operator",
+              cta: "Operator dashboard",
+            },
+            {
+              who: "Dealers",
+              what: "Give customers a more useful installation handoff and clearer equipment reports.",
+              href: "/demo/dealer",
+              cta: "Dealer view & pilot",
+            },
+          ].map((v) => (
+            <Link
+              key={v.who}
+              href={v.href}
+              className="group flex flex-col rounded-2xl bg-surface p-5 ring-1 ring-inset ring-line shadow-card transition hover:ring-line-strong"
+            >
+              <span className="eyebrow">{v.who}</span>
+              <span className="mt-2 flex-1 text-[17px] font-semibold leading-snug tracking-[-0.01em]">{v.what}</span>
+              <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-sun-ink">
+                {v.cta}
+                <IconArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* How it works */}
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6" aria-labelledby="how">
         <h2 id="how" className="eyebrow">
@@ -115,47 +186,6 @@ export default function MeetingOverview() {
         </ol>
       </section>
 
-      {/* One room, three views */}
-      <section className="border-t border-line bg-surface/60">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-          <h2 className="eyebrow">One room, three views</h2>
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            {[
-              {
-                who: "Resident",
-                what: "A workout for today, built from what's actually in the room. Machine guidance. One-tap problem reports.",
-                href: "/demo/resident",
-                cta: "Resident experience",
-              },
-              {
-                who: "Property team",
-                what: "Helios engagement, a live digital inventory of the room, and reports that already say which machine.",
-                href: "/demo/operator",
-                cta: "Operator dashboard",
-              },
-              {
-                who: "Dealer",
-                what: "Your installation becomes a resident-facing product, and service issues arrive with machine context.",
-                href: "/demo/dealer",
-                cta: "Dealer view",
-              },
-            ].map((v) => (
-              <Link
-                key={v.who}
-                href={v.href}
-                className="group flex flex-col rounded-2xl bg-surface p-5 ring-1 ring-inset ring-line shadow-card transition hover:ring-line-strong"
-              >
-                <span className="text-[17px] font-semibold tracking-[-0.01em]">{v.who}</span>
-                <span className="mt-1.5 flex-1 text-sm leading-relaxed text-muted">{v.what}</span>
-                <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-sun-ink">
-                  {v.cta}
-                  <IconArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
     </main>
   );
 }

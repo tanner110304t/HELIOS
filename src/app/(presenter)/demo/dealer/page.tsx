@@ -1,3 +1,5 @@
+import { DealerServiceBrief } from "@/components/demo/DealerServiceBrief";
+import { PilotPlanner } from "@/components/demo/PilotPlanner";
 import { ServiceReportCount } from "@/components/demo/ServiceReportCount";
 import { EquipmentTile } from "@/components/resident/EquipmentGlyph";
 import { Badge, DemoDataBadge } from "@/components/ui/Badge";
@@ -69,7 +71,7 @@ export default function DealerView() {
           <p className="eyebrow">Equipment</p>
           <p className="tabular mt-3 text-[28px] font-semibold leading-none tracking-[-0.03em]">{equipment.length}</p>
           <p className="mt-2 text-sm text-ink-3">
-            mapped items <span className="text-muted">· {units} units</span>
+            equipment entries <span className="text-muted">· {units} units</span>
           </p>
         </div>
         <div className="rounded-2xl bg-surface p-5 ring-1 ring-inset ring-line shadow-card">
@@ -147,6 +149,65 @@ export default function DealerView() {
             …and {equipment.length - preview.length} more.{" "}
             <Badge className="ml-1">Today this mapping is prepared by hand for the demo</Badge>
           </p>
+        </div>
+      </section>
+
+      {/* Who does what */}
+      <section className="mt-10" aria-labelledby="handoff">
+        <h2 id="handoff" className="text-lg font-semibold tracking-[-0.01em]">
+          Who does what in a pilot
+        </h2>
+        <p className="mt-1 text-sm text-muted">A proposed workflow to discuss — not a service agreement.</p>
+        <div className="mt-4 overflow-hidden rounded-2xl bg-surface ring-1 ring-inset ring-line shadow-card">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-line bg-paper/60 text-xs text-muted">
+                <th scope="col" className="w-40 px-4 py-2.5 font-medium">Party</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Proposed pilot responsibility</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {[
+                ["Dealer", "Provide the equipment list and confirm model details where relevant. Agree whether existing service arrangements apply."],
+                ["Helios", "Prepare the digital room and QR materials, run the pilot software, and do the initial equipment mapping."],
+                ["Property team", "Confirm what's actually in the room, promote access to residents, triage reports, and keep equipment status current."],
+              ].map(([who, what]) => (
+                <tr key={who}>
+                  <th scope="row" className="px-4 py-3 align-top font-semibold">{who}</th>
+                  <td className="px-4 py-3 text-ink-3">{what}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-2 text-xs text-muted">
+          No dealer response times, commissions or service obligations are implied. Software captures a problem; it
+          doesn&apos;t fix equipment.
+        </p>
+      </section>
+
+      {/* Service brief */}
+      <section className="mt-10" aria-labelledby="brief">
+        <h2 id="brief" className="text-lg font-semibold tracking-[-0.01em]">
+          What a service request looks like
+        </h2>
+        <p className="mt-1 max-w-3xl text-sm text-muted">
+          When the property team needs a technician, they copy a brief like this into whatever channel they already
+          use with their service provider — email, text, or a work-order system. Helios doesn&apos;t send it anywhere.
+        </p>
+        <div className="mt-4 max-w-3xl">
+          <DealerServiceBrief facility={facility} equipment={equipment} />
+        </div>
+      </section>
+
+      {/* Pilot */}
+      <section className="mt-10" aria-labelledby="pilot">
+        <h2 id="pilot" className="text-lg font-semibold tracking-[-0.01em]">
+          Plan a one-property pilot
+        </h2>
+        <p className="mt-1 text-sm text-muted">Tick through it together, then copy or print it for follow-up.</p>
+        <div className="mt-4">
+          <PilotPlanner propertyName={facility.propertyName} />
         </div>
       </section>
     </main>

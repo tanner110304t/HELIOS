@@ -14,7 +14,7 @@ const RESIDENT_PATH = `/g/${DEMO_FACILITY_SLUG}`;
 export default function ResidentDemo() {
   const facility = getFacilityBySlug(DEMO_FACILITY_SLUG)!;
   return (
-    <main className="mx-auto grid w-full max-w-6xl flex-1 gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_auto] lg:items-start lg:py-14">
+    <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-[minmax(0,1fr)] gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:py-14">
       <div className="max-w-md">
         <p className="eyebrow">Resident experience</p>
         <h1 className="mt-2 text-3xl font-semibold leading-tight tracking-[-0.03em]">
@@ -29,8 +29,9 @@ export default function ResidentDemo() {
           {[
             ["Choose", "Goal, experience, and time available."],
             ["Train", "Every exercise uses equipment that's in the room and working today."],
-            ["Swap", "Machine taken? Swap to another option this room supports."],
+            ["Swap", "Machine busy? Pick an option that doesn’t need it."],
             ["Report", "Something broken? Tap the machine — Helios attaches the details."],
+            ["Track", "Log weights and reps; next visit shows what they used last time. Saved on their phone only."],
           ].map(([t, d], i) => (
             <li key={t} className="flex gap-3">
               <span className="grid size-6 shrink-0 place-items-center rounded-full bg-ink font-mono text-[11px] text-paper">
@@ -74,6 +75,10 @@ export default function ResidentDemo() {
           </div>
         </div>
         <p className="mt-3 text-center text-xs text-muted">Live resident app · interact inside the frame</p>
+        <p className="mx-auto mt-1 max-w-[340px] text-center text-xs leading-relaxed text-muted">
+          Phones that scan the QR keep their own separate demo data. Reports and feedback filed here in the frame show up
+          on the operator dashboard.
+        </p>
       </div>
     </main>
   );

@@ -4,14 +4,29 @@ import { useMemo, useSyncExternalStore } from "react";
 import { getSeedIssues } from "@/data/demoIssues";
 import type { Equipment, EquipmentStatus, IssueCategory, IssueReport } from "@/types/domain";
 import {
+  EMPTY_RESIDENT,
+  RESIDENT_VERSION,
+  archive,
+  newActivePlan,
+  parseResident,
+  type ActivePlan,
+  type ResidentState,
+} from "./resident";
+import type { Workout } from "@/lib/workout/generateWorkout";
+import {
   EMPTY_STATE,
   STATE_VERSION,
   effectiveEquipment,
   effectiveIssues,
   parseState,
+  sessionSummary,
+  withEvent,
+  withoutEvent,
   withIssueStatus,
   withReport,
   withService,
+  type DemoEvent,
+  type DemoEventType,
   type DemoState,
 } from "./state";
 
@@ -29,6 +44,7 @@ import {
 const PREFIX = "helios-demo:";
 const CHANGE_EVENT = "helios-demo:change";
 const keyFor = (facilityId: string) => `${PREFIX}v${STATE_VERSION}:${facilityId}`;
+const residentKeyFor = (facilityId: string) => `${PREFIX}resident-v${RESIDENT_VERSION}:${facilityId}`;
 
 function notify() {
   try {
@@ -46,17 +62,24 @@ function readRaw(key: string): string | null {
   }
 }
 
-/** Apply a change and save it. Returns false if the browser refused to save. */
-function update(facilityId: string, change: (s: DemoState) => DemoState): boolean {
-  const key = keyFor(facilityId);
+/** Apply a change to a stored record and save it. Returns false if the browser refused to save. */
+function write<T>(key: string, parse: (raw: string | null) => T, change: (s: T) => T): boolean {
   try {
-    const next = change(parseState(readRaw(key)));
+    const next = change(parse(readRaw(key)));
     window.localStorage.setItem(key, JSON.stringify(next));
     notify();
     return true;
   } catch {
     return false;
   }
+}
+
+function update(facilityId: string, change: (s: DemoState) => DemoState): boolean {
+  return write(keyFor(facilityId), parseState, change);
+}
+
+export function updateResident(facilityId: string, change: (s: ResidentState) => ResidentState): boolean {
+  return write(residentKeyFor(facilityId), parseResident, change);
 }
 
 // ── subscription with stable snapshots (useSyncExternalStore) ──────────────
@@ -73,15 +96,67 @@ function subscribe(onChange: () => void) {
   };
 }
 
-const cache = new Map<string, { raw: string | null; state: DemoState }>();
-function snapshot(facilityId: string): DemoState {
-  const key = keyFor(facilityId);
+const cache = new Map<string, { raw: string | null; value: unknown }>();
+function cached<T>(key: string, parse: (raw: string | null) => T): T {
   const raw = readRaw(key);
   const hit = cache.get(key);
-  if (hit && hit.raw === raw) return hit.state; // same object → no re-render
-  const state = parseState(raw);
-  cache.set(key, { raw, state });
-  return state;
+  if (hit && hit.raw === raw) return hit.value as T; // same object → no re-render
+  const value = parse(raw);
+  cache.set(key, { raw, value });
+  return value;
+}
+const snapshot = (facilityId: string) => cached(keyFor(facilityId), parseState);
+
+/** The resident's own plan and history on this device (empty during server render). */
+export function useResident(facilityId: string) {
+  const state = useSyncExternalStore(
+    subscribe,
+    () => cached(residentKeyFor(facilityId), parseResident),
+    () => EMPTY_RESIDENT,
+  );
+  const hydrated = useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
+  return { state, hydrated };
+}
+
+function newId(prefix: string) {
+  const rand =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID().replace(/-/g, "")
+      : Math.random().toString(36).slice(2) + Date.now().toString(36);
+  return `${prefix}_${rand.slice(0, 12).toLowerCase()}`;
+}
+
+/**
+ * Save a freshly generated workout as the active plan. Anything logged in the
+ * previous plan is kept in history first. Returns the plan, or null if the
+ * browser refused to save (the workout still works, it just won't persist).
+ */
+export function startPlan(facilityId: string, workout: Workout): ActivePlan | null {
+  const now = new Date().toISOString();
+  const plan = newActivePlan(workout, facilityId, newId("plan"), now);
+  const ok = updateResident(facilityId, (s) => ({ ...archive(s, now), active: plan }));
+  return ok ? plan : null;
+}
+
+/** Change the active plan (and keep its logged sets mirrored into history). */
+export function changePlan(facilityId: string, change: (p: ActivePlan) => ActivePlan): boolean {
+  return updateResident(facilityId, (s) => {
+    if (!s.active) return s;
+    const next = { ...s, active: change(s.active) };
+    return archive(next, new Date().toISOString());
+  });
+}
+
+export function endPlan(facilityId: string): boolean {
+  return updateResident(facilityId, (s) => ({ ...archive(s, new Date().toISOString()), active: null }));
+}
+
+export function clearHistory(facilityId: string): boolean {
+  return updateResident(facilityId, (s) => ({ ...s, history: [] }));
 }
 
 /** Seeded report times are relative to when this page loaded in the browser. */
@@ -110,19 +185,13 @@ export function useFacilityState(facilityId: string, seedEquipment: Equipment[])
       now: clientNow,
       equipment: effectiveEquipment(seedEquipment, state),
       issues: effectiveIssues(seeds, state),
+      session: sessionSummary(state),
     };
   }, [facilityId, seedEquipment, state, hydrated]);
 }
 
 // ── actions ─────────────────────────────────────────────────────────────────
 
-function newReportId() {
-  const rand =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID().replace(/-/g, "")
-      : Math.random().toString(36).slice(2) + Date.now().toString(36);
-  return `rpt_${rand.slice(0, 12).toLowerCase()}`;
-}
 
 /** Build the report record. Equipment + facility context come from the page, never from the resident. */
 export function buildIssueReport(input: {
@@ -132,7 +201,7 @@ export function buildIssueReport(input: {
   description?: string;
 }): IssueReport {
   return {
-    id: newReportId(),
+    id: newId("rpt"),
     facilityId: input.facilityId,
     equipmentId: input.equipmentId,
     category: input.category,
@@ -157,6 +226,16 @@ export function setIssueStatus(
   note?: string,
 ) {
   return update(facilityId, (s) => withIssueStatus(s, issue, status, new Date().toISOString(), note));
+}
+
+/** Record a resident event for the operator's "This demo session" panel. Best effort. */
+export function recordEvent(facilityId: string, event: Omit<DemoEvent, "id" | "at">) {
+  const full: DemoEvent = { ...event, id: newId("evt"), at: new Date().toISOString() };
+  return update(facilityId, (s) => withEvent(s, full));
+}
+
+export function removeEvent(facilityId: string, type: DemoEventType, planId: string) {
+  return update(facilityId, (s) => withoutEvent(s, type, planId));
 }
 
 export function setServiceStatus(facilityId: string, equipmentId: string, status: EquipmentStatus, reason?: string) {

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MachineHistory } from "@/components/resident/History";
 import { MachineHeaderStatus, MachineNotice } from "@/components/resident/MachineStatus";
 import { ResidentFooter, ResidentHeader, ResidentMain } from "@/components/resident/ResidentChrome";
 import { Badge } from "@/components/ui/Badge";
@@ -63,6 +64,8 @@ export default async function MachinePage({ params }: PageProps<"/g/[facility]/e
           <p className="mt-1 text-sm text-muted">{eq.category}</p>
         </MachineHeaderStatus>
         <MachineNotice facilityId={facility.id} equipment={roomEquipment} equipmentId={eq.id} />
+
+        <MachineHistory facilityId={facility.id} equipmentId={eq.id} />
 
         <Section title="What it trains">
           <ul className="flex flex-wrap gap-1.5">

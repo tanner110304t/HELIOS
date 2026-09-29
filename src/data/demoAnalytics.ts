@@ -86,3 +86,21 @@ export function getAnalyticsSummary() {
     equipmentPageViews: sum(Object.values(equipmentPageViews)),
   };
 }
+
+/**
+ * DEMO DATA — fictional answers to the optional end-of-workout question
+ * "Did this plan help you use the gym today?" in the same sample period.
+ * Includes negative answers on purpose. Not testimonials; no people.
+ */
+export const sampleFeedback = {
+  answers: { yes: 38, somewhat: 15, no: 8 },
+  /** Reasons picked by "somewhat"/"no" respondents (they could pick more than one). */
+  reasons: { "machine-busy": 9, "unclear-guidance": 6, "time-mismatch": 5, "not-suitable": 3 },
+};
+
+/** DEMO DATA — times a resident marked a machine busy and chose an alternative, by machine. */
+export const sampleBusyAlternatives: { equipmentId: string; count: number }[] = [
+  { equipmentId: "eq_smith", count: 14 },
+  { equipmentId: "eq_lat_pulldown", count: 6 },
+  { equipmentId: "eq_leg_press", count: 5 },
+];

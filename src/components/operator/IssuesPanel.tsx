@@ -18,6 +18,7 @@ import { Badge, IssueStatusBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { IconCheck, IconPause } from "@/components/ui/icons";
 import { EquipmentTile } from "@/components/resident/EquipmentGlyph";
+import { CopyText } from "@/components/demo/CopyText";
 
 export function IssuesPanel({
   issues,
@@ -38,7 +39,7 @@ export function IssuesPanel({
   const resolved = issues.filter((i) => !isUnresolved(i));
 
   return (
-    <section aria-labelledby="issues" className="mt-10">
+    <section id="issues-section" aria-labelledby="issues" className="mt-10 scroll-mt-14">
       <div className="flex flex-wrap items-center gap-3">
         <h2 id="issues" className="text-lg font-semibold tracking-[-0.01em]">
           Equipment issues
@@ -272,7 +273,7 @@ function IssueCard({
               {confirmReturn ? "Return anyway" : "Return to service"}
             </Button>
           )}
-          <CopyBrief text={serviceBrief(facility, eq, issue)} />
+          <CopyText text={serviceBrief(facility, eq, issue)} label="Copy service brief" />
         </div>
         {confirmReturn && returnWarning && (
           <p className="text-xs text-warn" role="alert">
@@ -286,39 +287,5 @@ function IssueCard({
         )}
       </div>
     </li>
-  );
-}
-
-/** Copies a plain-text brief. Shows the text to copy by hand if the clipboard isn't available. */
-function CopyBrief({ text }: { text: string }) {
-  const [state, setState] = useState<"idle" | "copied" | "manual">("idle");
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setState("copied");
-      window.setTimeout(() => setState("idle"), 2000);
-    } catch {
-      setState("manual");
-    }
-  };
-  return (
-    <>
-      <Button variant="ghost" className="h-9 px-3 text-[13px] ring-1 ring-inset ring-line" onClick={copy}>
-        {state === "copied" ? "Copied ✓" : "Copy service brief"}
-      </Button>
-      {state === "manual" && (
-        <div className="w-full">
-          <p className="text-xs text-muted">Couldn&apos;t copy automatically. Select the text below and copy it.</p>
-          <textarea
-            readOnly
-            value={text}
-            rows={7}
-            aria-label="Service brief"
-            onFocus={(e) => e.currentTarget.select()}
-            className="mt-1 w-full rounded-lg bg-paper p-2 font-mono text-[11px] ring-1 ring-inset ring-line"
-          />
-        </div>
-      )}
-    </>
   );
 }

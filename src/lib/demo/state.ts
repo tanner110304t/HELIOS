@@ -28,8 +28,25 @@ export type ServiceOverride = {
   changedAt: string;
 };
 
+/**
+ * The few resident events the operator "This demo session" panel counts.
+ * Local only; no identity, no health data, just categories.
+ */
+export type DemoEventType = "plan_started" | "plan_completed" | "exercise_swapped" | "busy_alternative" | "feedback_submitted";
+
+export type DemoEvent = {
+  id: string;
+  type: DemoEventType;
+  at: string;
+  planId?: string;
+  /** feedback_submitted only */
+  answer?: "yes" | "somewhat" | "no";
+  reasons?: string[];
+};
+
 export type DemoState = {
   version: typeof STATE_VERSION;
+  events: DemoEvent[];
   /** Reports filed in this browser during the demo. */
   reports: IssueReport[];
   /** Operator actions on any report (seeded or live), by report id. */
@@ -40,6 +57,7 @@ export type DemoState = {
 
 export const EMPTY_STATE: DemoState = Object.freeze({
   version: STATE_VERSION,
+  events: [],
   reports: [],
   issueChanges: {},
   service: {},
@@ -111,7 +129,73 @@ export function parseState(raw: string | null): DemoState {
     }
   }
 
-  return { version: STATE_VERSION, reports, issueChanges, service };
+  const types: DemoEventType[] = ["plan_started", "plan_completed", "exercise_swapped", "busy_alternative", "feedback_submitted"];
+  const events: DemoEvent[] = (Array.isArray(data.events) ? data.events : [])
+    .filter((e): e is Record<string, unknown> => isObj(e) && isStr(e.id) && isStr(e.at) && types.includes(e.type as DemoEventType))
+    .map((e): DemoEvent => ({
+      id: e.id as string,
+      type: e.type as DemoEventType,
+      at: e.at as string,
+      planId: optStr(e.planId),
+      answer: e.answer === "yes" || e.answer === "somewhat" || e.answer === "no" ? (e.answer as DemoEvent["answer"]) : undefined,
+      reasons: Array.isArray(e.reasons) ? e.reasons.filter(isStr) : undefined,
+    }))
+    .slice(-MAX_EVENTS);
+
+  return { version: STATE_VERSION, events, reports, issueChanges, service };
+}
+
+const MAX_EVENTS = 500;
+
+/**
+ * Add an event. Completion and feedback count once per plan: a repeat
+ * replaces the earlier one (re-completing, changing an answer).
+ */
+export function withEvent(state: DemoState, event: DemoEvent): DemoState {
+  const oncePerPlan = event.type === "plan_completed" || event.type === "feedback_submitted" || event.type === "plan_started";
+  const rest = oncePerPlan && event.planId
+    ? state.events.filter((e) => !(e.type === event.type && e.planId === event.planId))
+    : state.events;
+  return { ...state, events: [...rest, event].slice(-MAX_EVENTS) };
+}
+
+/** Undo a completion (resident un-checked something). */
+export function withoutEvent(state: DemoState, type: DemoEventType, planId: string): DemoState {
+  return { ...state, events: state.events.filter((e) => !(e.type === type && e.planId === planId)) };
+}
+
+export type SessionSummary = {
+  plansStarted: number;
+  plansCompleted: number;
+  feedback: { yes: number; somewhat: number; no: number };
+  swaps: number;
+  busyAlternatives: number;
+  reportsFiled: number;
+  reportsAcknowledged: number;
+  reportsResolved: number;
+  serviceChanges: number;
+};
+
+/** Counts for the operator's "This demo session" strip — only what happened in this browser. */
+export function sessionSummary(state: DemoState): SessionSummary {
+  const count = (t: DemoEventType) => state.events.filter((e) => e.type === t).length;
+  const fb = state.events.filter((e) => e.type === "feedback_submitted");
+  const changes = Object.values(state.issueChanges);
+  return {
+    plansStarted: count("plan_started"),
+    plansCompleted: count("plan_completed"),
+    feedback: {
+      yes: fb.filter((e) => e.answer === "yes").length,
+      somewhat: fb.filter((e) => e.answer === "somewhat").length,
+      no: fb.filter((e) => e.answer === "no").length,
+    },
+    swaps: count("exercise_swapped"),
+    busyAlternatives: count("busy_alternative"),
+    reportsFiled: state.reports.length,
+    reportsAcknowledged: changes.filter((c) => c.acknowledgedAt).length,
+    reportsResolved: changes.filter((c) => c.status === "resolved").length,
+    serviceChanges: Object.keys(state.service).length,
+  };
 }
 
 // ── deriving what everyone sees ─────────────────────────────────────────────

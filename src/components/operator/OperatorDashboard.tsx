@@ -4,6 +4,16 @@ import { useEffect, useState } from "react";
 import type { WeeklyEngagement } from "@/data/demoAnalytics";
 import { useFacilityState } from "@/lib/demo/client";
 import { isUnresolved } from "@/lib/demo/state";
+import { headlineMeasures, recommendations, type Feedback } from "@/lib/insights";
+import { timeAgo } from "@/lib/time";
+import {
+  MetricDefinitions,
+  NeedsAttention,
+  NextSteps,
+  SessionStrip,
+  StuckReasons,
+  UsefulMeasures,
+} from "./DecisionSections";
 import { goalLabels } from "@/lib/workout/templates";
 import type { Duration, Equipment, Facility, Goal } from "@/types/domain";
 import { Badge, DemoDataBadge } from "@/components/ui/Badge";
@@ -26,19 +36,9 @@ export type AnalyticsProps = {
   durationMix: { duration: Duration; share: number }[];
   goalMix: { goal: Goal; share: number }[];
   pageViews: Record<string, number>;
+  feedback: Feedback;
+  busyByMachine: { equipmentId: string; count: number }[];
 };
-
-function Kpi({ label, value, note, tone }: { label: string; value: number | string; note?: string; tone?: "warn" }) {
-  return (
-    <div className="rounded-2xl bg-surface p-4 ring-1 ring-inset ring-line shadow-card">
-      <p className="text-[13px] leading-snug text-muted">{label}</p>
-      <p className={`tabular mt-2 text-[28px] font-semibold leading-none tracking-[-0.03em] ${tone === "warn" ? "text-warn" : ""}`}>
-        {value}
-      </p>
-      {note && <p className="mt-2 text-xs text-faint">{note}</p>}
-    </div>
-  );
-}
 
 export function OperatorDashboard({
   facility,
@@ -49,7 +49,7 @@ export function OperatorDashboard({
   equipment: Equipment[];
   analytics: AnalyticsProps;
 }) {
-  const { issues, equipment, hydrated, now: loadedAt } = useFacilityState(facility.id, seedEquipment);
+  const { issues, equipment, hydrated, session, now: loadedAt } = useFacilityState(facility.id, seedEquipment);
   const [now, setNow] = useState(loadedAt);
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 30_000);
@@ -60,8 +60,22 @@ export function OperatorDashboard({
   const openCounts = new Map<string, number>();
   for (const i of unresolved) openCounts.set(i.equipmentId, (openCounts.get(i.equipmentId) ?? 0) + 1);
   const openIssues = unresolved.length;
-  const outOfService = equipment.filter((e) => e.status !== "available").length;
   const s = analytics.summary;
+  const measures = headlineMeasures({
+    generated: s.workoutsGenerated,
+    completed: s.workoutsCompleted,
+    devices: s.uniqueDevices,
+    repeatDevices: s.repeatDevices,
+    feedback: analytics.feedback,
+  });
+  const recs = recommendations({
+    feedback: analytics.feedback,
+    busyByMachine: analytics.busyByMachine,
+    equipment,
+    issues,
+    now,
+    timeAgo: (iso) => (hydrated ? timeAgo(iso, now).toLowerCase() : "a while ago"),
+  });
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:py-10">
@@ -80,26 +94,20 @@ export function OperatorDashboard({
         </div>
       </div>
 
-      <p className="mt-5 rounded-xl bg-surface px-4 py-3 text-[13px] leading-relaxed text-ink-3 ring-1 ring-inset ring-line">
-        <span className="font-semibold text-ink">Helios engagement only — not total facility utilization.</span>{" "}
-        These figures count residents using Helios (QR sessions, workouts, machine pages). They don&apos;t measure gym
-        visits or occupancy.
-      </p>
+      <SessionStrip session={session} />
 
-      {/* KPIs */}
-      <section aria-label="Helios engagement summary" className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-        <Kpi label="Helios sessions" value={s.heliosVisits} note="Resident sessions in Helios" />
-        <Kpi label="Workouts generated" value={s.workoutsGenerated} />
-        <Kpi label="Helios workouts completed" value={s.workoutsCompleted} note={`${s.completionRate}% of generated`} />
-        <Kpi label="Repeat Helios devices" value={s.repeatDevices} note={`of ${s.uniqueDevices} devices, 2+ days`} />
-        <Kpi label="Equipment-page views" value={s.equipmentPageViews} />
-        <Kpi
-          label="Unresolved equipment reports"
-          value={openIssues}
-          note={`${openCounts.size} machine${openCounts.size === 1 ? "" : "s"} · ${outOfService} out of service`}
-          tone={openIssues ? "warn" : undefined}
-        />
-      </section>
+      <NeedsAttention issues={issues} equipment={equipment} hydrated={hydrated} now={now} />
+
+      <UsefulMeasures {...measures} windowLabel={analytics.windowLabel} unresolved={openIssues} />
+
+      <StuckReasons
+        reasons={analytics.feedback.reasons}
+        notYes={analytics.feedback.answers.somewhat + analytics.feedback.answers.no}
+        busyByMachine={analytics.busyByMachine}
+        equipment={equipment}
+      />
+
+      <NextSteps recs={recs} />
 
       {/* Issues — the live moment of the demo */}
       <IssuesPanel
@@ -110,17 +118,19 @@ export function OperatorDashboard({
         hydrated={hydrated}
       />
 
-      {/* Engagement */}
+      {/* Detail on demand */}
       <section aria-labelledby="engagement" className="mt-10">
         <div className="flex items-center justify-between gap-3">
           <h2 id="engagement" className="text-lg font-semibold tracking-[-0.01em]">
-            Helios engagement
+            Engagement detail
           </h2>
           <DemoDataBadge />
         </div>
         <div className="mt-4 grid gap-3 lg:grid-cols-[1.6fr_1fr]">
           <div className="rounded-2xl bg-surface p-5 ring-1 ring-inset ring-line shadow-card">
-            <p className="text-sm font-medium">Workouts per week</p>
+            <p className="text-sm font-medium">
+              Workouts per week <span className="font-normal text-muted">· {s.heliosVisits} Helios sessions in the period</span>
+            </p>
             <p className="text-xs text-muted">Generated in Helios vs. checked off as completed</p>
             <EngagementChart weeks={analytics.weekly} />
           </div>
@@ -145,6 +155,8 @@ export function OperatorDashboard({
         pageViews={analytics.pageViews}
         openCounts={openCounts}
       />
+
+      <MetricDefinitions />
     </main>
   );
 }

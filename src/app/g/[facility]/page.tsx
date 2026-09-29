@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChoiceGroup } from "@/components/resident/ChoiceGroup";
+import { ResumeBanner } from "@/components/resident/ResumeBanner";
 import { ServiceSummary } from "@/components/resident/ServiceSummary";
 import { ResidentFooter, ResidentHeader, ResidentMain } from "@/components/resident/ResidentChrome";
 import { buttonClass } from "@/components/ui/Button";
-import { IconArrowRight, IconGrid, IconWrench } from "@/components/ui/icons";
+import { IconArrowRight, IconClock, IconGrid, IconWrench } from "@/components/ui/icons";
 import { getEquipment, getFacilityBySlug } from "@/data/repository";
 import { durations, focusAreas, focusLabels, goalLabels, levelLabels } from "@/lib/workout/templates";
 
@@ -24,7 +25,39 @@ export default async function FacilityWelcome({ params }: PageProps<"/g/[facilit
           <ServiceSummary facilityId={facility.id} equipment={equipment} />
         </div>
 
-        <form action={`/g/${facility.slug}/workout`} method="get" className="mt-3">
+        <ResumeBanner facilityId={facility.id} facilitySlug={facility.slug} />
+
+        {/* Quick start: no decisions needed. */}
+        <Link
+          href={`/g/${facility.slug}/workout?goal=general&level=beginner&time=30`}
+          className="mt-5 flex items-center justify-between gap-3 rounded-2xl bg-sun px-5 py-4 text-white shadow-card transition hover:bg-sun-ink"
+        >
+          <span>
+            <span className="block text-[17px] font-semibold">Help me get started</span>
+            <span className="block text-[13px] text-white/85">A 30-minute beginner plan for this room</span>
+          </span>
+          <IconArrowRight className="size-5 shrink-0" />
+        </Link>
+
+        <nav aria-label="Other things you can do" className="mt-3 grid grid-cols-3 gap-2">
+          {[
+            { href: `/g/${facility.slug}/equipment`, label: "Learn a machine", icon: IconGrid },
+            { href: `/g/${facility.slug}/equipment?report=1`, label: "Report a problem", icon: IconWrench },
+            { href: `/g/${facility.slug}/history`, label: "My history", icon: IconClock },
+          ].map((t) => (
+            <Link
+              key={t.label}
+              href={t.href}
+              className="flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-2xl bg-surface px-2 text-center text-[13px] font-medium leading-tight ring-1 ring-inset ring-line hover:ring-line-strong"
+            >
+              <t.icon className="size-5 text-muted" />
+              {t.label}
+            </Link>
+          ))}
+        </nav>
+
+        <h2 className="mt-9 text-[19px] font-semibold tracking-[-0.015em]">Or build your own</h2>
+        <form action={`/g/${facility.slug}/workout`} method="get" className="-mt-3">
           <ChoiceGroup
             legend="What do you want to do today?"
             name="goal"
@@ -66,22 +99,6 @@ export default async function FacilityWelcome({ params }: PageProps<"/g/[facilit
           <p className="mt-3 text-center text-xs text-muted">No account or email needed.</p>
         </form>
 
-        <div className="mt-8 grid grid-cols-2 gap-2">
-          <Link
-            href={`/g/${facility.slug}/equipment`}
-            className="flex min-h-14 items-center gap-2.5 rounded-2xl bg-surface px-4 text-sm font-medium ring-1 ring-inset ring-line hover:ring-line-strong"
-          >
-            <IconGrid className="size-5 text-muted" />
-            Equipment
-          </Link>
-          <Link
-            href={`/g/${facility.slug}/equipment?report=1`}
-            className="flex min-h-14 items-center gap-2.5 rounded-2xl bg-surface px-4 text-sm font-medium ring-1 ring-inset ring-line hover:ring-line-strong"
-          >
-            <IconWrench className="size-5 text-muted" />
-            Report a problem
-          </Link>
-        </div>
       </ResidentMain>
       <ResidentFooter />
     </>
