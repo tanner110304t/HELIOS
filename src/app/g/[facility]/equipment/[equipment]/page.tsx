@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { EquipmentTile } from "@/components/resident/EquipmentGlyph";
+import { MachineHeaderStatus, MachineNotice } from "@/components/resident/MachineStatus";
 import { ResidentFooter, ResidentHeader, ResidentMain } from "@/components/resident/ResidentChrome";
-import { Badge, EquipmentStatusBadge } from "@/components/ui/Badge";
+import { Badge } from "@/components/ui/Badge";
 import { buttonClass } from "@/components/ui/Button";
 import { IconArrowRight, IconWrench } from "@/components/ui/icons";
 import {
   getEquipment,
   getEquipmentBySlug,
-  getEquipmentWithOpenReports,
   getExercises,
   getExercisesForEquipment,
   getFacilityBySlug,
@@ -50,8 +49,7 @@ export default async function MachinePage({ params }: PageProps<"/g/[facility]/e
 
   const exercises = getExercisesForEquipment(eq.id);
   const usedBy = goalsUsingEquipment(eq.id, { equipment: getEquipment(facility.id), exercises: getExercises() });
-  const alreadyReported = getEquipmentWithOpenReports(facility.id).has(eq.id);
-  const available = eq.status === "available";
+  const roomEquipment = getEquipment(facility.id);
 
   return (
     <>
@@ -60,27 +58,11 @@ export default async function MachinePage({ params }: PageProps<"/g/[facility]/e
         back={{ href: `/g/${facility.slug}/equipment`, label: "Equipment" }}
       />
       <ResidentMain>
-        <div className="flex items-start gap-4 pt-2">
-          <EquipmentTile kind={eq.kind} className="size-20 rounded-2xl" dimmed={!available} />
-          <div className="min-w-0 pt-1">
-            <h1 className="text-[24px] font-semibold leading-[1.15] tracking-[-0.025em]">{eq.name}</h1>
-            <p className="mt-1 text-sm text-muted">{eq.category}</p>
-            <div className="mt-2">
-              <EquipmentStatusBadge status={eq.status} attention={alreadyReported} />
-            </div>
-          </div>
-        </div>
-
-        {!available && (
-          <p className="mt-4 rounded-xl bg-down-soft px-3.5 py-3 text-[13px] leading-relaxed text-down">
-            The facility team knows about this. Helios is leaving it out of workouts until it&apos;s back.
-          </p>
-        )}
-        {available && alreadyReported && (
-          <p className="mt-4 rounded-xl bg-warn-soft px-3.5 py-3 text-[13px] leading-relaxed text-warn">
-            A problem was reported recently and the facility team has it. You can still add details below.
-          </p>
-        )}
+        <MachineHeaderStatus facilityId={facility.id} equipment={roomEquipment} equipmentId={eq.id}>
+          <h1 className="text-[24px] font-semibold leading-[1.15] tracking-[-0.025em]">{eq.name}</h1>
+          <p className="mt-1 text-sm text-muted">{eq.category}</p>
+        </MachineHeaderStatus>
+        <MachineNotice facilityId={facility.id} equipment={roomEquipment} equipmentId={eq.id} />
 
         <Section title="What it trains">
           <ul className="flex flex-wrap gap-1.5">
@@ -125,9 +107,7 @@ export default async function MachinePage({ params }: PageProps<"/g/[facility]/e
           <Section title="In your workout">
             <div className="rounded-2xl bg-surface p-4 ring-1 ring-inset ring-line">
               <p className="text-[14px] leading-relaxed">
-                {available
-                  ? "Helios can include this machine when you choose:"
-                  : "Normally included when you choose:"}
+                Helios can include this machine (when it&apos;s in service) when you choose:
               </p>
               <ul className="mt-2 flex flex-wrap gap-1.5">
                 {usedBy.map((g) => (

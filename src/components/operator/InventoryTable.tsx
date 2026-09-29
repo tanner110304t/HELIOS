@@ -1,4 +1,9 @@
-import type { Equipment } from "@/types/domain";
+"use client";
+
+import { useState } from "react";
+import { setServiceStatus } from "@/lib/demo/client";
+import { returnToServiceWarning } from "@/lib/demo/state";
+import type { Equipment, IssueReport } from "@/types/domain";
 import { Badge, DemoDataBadge } from "@/components/ui/Badge";
 import { IconAlert, IconCheck, IconPause } from "@/components/ui/icons";
 import { EquipmentTile } from "@/components/resident/EquipmentGlyph";
@@ -18,16 +23,55 @@ function StatusCell({ eq, open }: { eq: Equipment; open: number }) {
     );
   return (
     <Badge tone="ok">
-      <IconCheck className="size-3.5" /> Available
+      <IconCheck className="size-3.5" /> In service
     </Badge>
   );
 }
 
+/** Explicit service control. Returning a machine with unresolved reports needs a second click. */
+function ServiceToggle({ facilityId, eq, issues }: { facilityId: string; eq: Equipment; issues: IssueReport[] }) {
+  const [confirm, setConfirm] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const warning = returnToServiceWarning(issues, eq.id);
+  if (eq.status === "available") {
+    return (
+      <button
+        type="button"
+        onClick={() => setFailed(!setServiceStatus(facilityId, eq.id, "unavailable", "Marked out of service by the property team"))}
+        className="rounded-md px-2 py-1 text-xs font-medium text-ink-3 ring-1 ring-inset ring-line hover:bg-paper-2"
+        title={eq.quantity > 1 ? `Takes all ${eq.quantity} units out of Helios plans` : undefined}
+      >
+        {failed ? "Couldn't save" : "Take out"}
+      </button>
+    );
+  }
+  return (
+    <span className="inline-flex flex-col items-start gap-1">
+      <button
+        type="button"
+        onClick={() => {
+          if (warning && !confirm) return setConfirm(true);
+          setConfirm(false);
+          setFailed(!setServiceStatus(facilityId, eq.id, "available"));
+        }}
+        className="rounded-md px-2 py-1 text-xs font-medium text-ink ring-1 ring-inset ring-line-strong hover:bg-paper-2"
+      >
+        {failed ? "Couldn't save" : confirm ? "Return anyway" : "Return to service"}
+      </button>
+      {confirm && warning && <span className="text-[11px] text-warn">{warning}</span>}
+    </span>
+  );
+}
+
 export function InventoryTable({
+  facilityId,
   equipment,
+  issues,
   pageViews,
   openCounts,
 }: {
+  facilityId: string;
+  issues: IssueReport[];
   equipment: Equipment[];
   pageViews: Record<string, number>;
   openCounts: Map<string, number>;
@@ -41,14 +85,15 @@ export function InventoryTable({
             Digital equipment inventory
           </h2>
           <p className="mt-1 text-sm text-muted">
-            {equipment.length} mapped items · {units} units · the structured version of the room
+            {equipment.length} equipment entries · {units} units · the structured version of the room. Service changes
+            here update resident pages and new workouts.
           </p>
         </div>
         <DemoDataBadge />
       </div>
 
       <div className="mt-4 overflow-x-auto rounded-2xl bg-surface ring-1 ring-inset ring-line shadow-card">
-        <table className="w-full min-w-[720px] text-left text-sm">
+        <table className="w-full min-w-[820px] text-left text-sm">
           <thead>
             <tr className="border-b border-line text-xs text-muted">
               <th scope="col" className="px-4 py-3 font-medium">Equipment</th>
@@ -56,7 +101,8 @@ export function InventoryTable({
               <th scope="col" className="px-4 py-3 font-medium">Location</th>
               <th scope="col" className="px-4 py-3 font-medium">Status</th>
               <th scope="col" className="px-4 py-3 text-right font-medium">Helios views</th>
-              <th scope="col" className="px-4 py-3 font-medium">Open issues</th>
+              <th scope="col" className="px-4 py-3 font-medium">Open reports</th>
+              <th scope="col" className="px-4 py-3 font-medium">Service</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -86,8 +132,11 @@ export function InventoryTable({
                     {open > 0 ? (
                       <span className="font-medium text-warn">{open} open</span>
                     ) : (
-                      <span className="text-faint">None</span>
+                      <span className="text-muted">None</span>
                     )}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <ServiceToggle facilityId={facilityId} eq={e} issues={issues} />
                   </td>
                 </tr>
               );

@@ -1,4 +1,4 @@
-import type { Duration, Goal, Level, MovementCategory } from "@/types/domain";
+import type { Duration, FocusArea, Goal, Level, MovementCategory } from "@/types/domain";
 
 /**
  * Workout templates: the ordered movement slots each goal fills, how many
@@ -21,15 +21,39 @@ export const levelLabels: Record<Level, string> = {
   advanced: "Advanced",
 };
 
-export const durations: Duration[] = [20, 30, 45];
+export const durations: Duration[] = [20, 30, 45, 60, 75, 90];
 
-export type Prescription = { sets: number; reps: string; rest: string };
+export const focusLabels: Record<FocusArea, string> = {
+  chest: "Chest",
+  back: "Back",
+  shoulders: "Shoulders",
+  arms: "Arms",
+  legs: "Legs & glutes",
+  core: "Core",
+};
+
+export const focusAreas = Object.keys(focusLabels) as FocusArea[];
+
+/** Which movement slots train each focus area. */
+export const focusCategories: Record<FocusArea, MovementCategory[]> = {
+  chest: ["horizontal-push"],
+  back: ["vertical-pull", "horizontal-pull"],
+  shoulders: ["vertical-push", "shoulder-isolation"],
+  arms: ["arms"],
+  legs: ["knee-dominant", "hip-hinge"],
+  core: ["core"],
+};
+
+/** Target prescription; the engine may use fewer sets to fit the chosen length. */
+export type Prescription = { sets: number; reps: string; restSeconds: number };
 
 type Template = {
-  /** Strength slots in priority order; the first N are used. */
+  /** Strength slots in priority order. Longer sessions cycle through them again with new exercises. */
   slots: MovementCategory[];
-  /** Number of strength exercises per session length. */
+  /** Most strength exercises per session length (fewer if they won't fit). */
   strengthCount: Record<Duration, number>;
+  /** When a plan must shrink: keep sets (fewer exercises) or keep exercises (fewer sets). */
+  prefer: "sets" | "exercises";
   /** Optional conditioning block at the end (minutes per session length). */
   finisherMinutes?: Record<Duration, number>;
   prescription: Record<Level, Prescription>;
@@ -37,7 +61,8 @@ type Template = {
   accessoryReps: string;
 };
 
-export const WARMUP_MINUTES = 5;
+/** Never prescribe fewer than this many sets per exercise. */
+export const MIN_SETS = 2;
 
 export const templates: Record<Goal, Template> = {
   muscle: {
@@ -49,12 +74,15 @@ export const templates: Record<Goal, Template> = {
       "shoulder-isolation",
       "hip-hinge",
       "arms",
+      "vertical-push",
+      "core",
     ],
-    strengthCount: { 20: 4, 30: 5, 45: 7 },
+    strengthCount: { 20: 4, 30: 5, 45: 7, 60: 8, 75: 9, 90: 10 },
+    prefer: "exercises",
     prescription: {
-      beginner: { sets: 2, reps: "10–12", rest: "60 sec" },
-      intermediate: { sets: 3, reps: "8–12", rest: "75 sec" },
-      advanced: { sets: 4, reps: "8–12", rest: "90 sec" },
+      beginner: { sets: 2, reps: "10–12", restSeconds: 60 },
+      intermediate: { sets: 3, reps: "8–12", restSeconds: 75 },
+      advanced: { sets: 4, reps: "8–12", restSeconds: 90 },
     },
     accessoryReps: "12–15",
   },
@@ -67,11 +95,12 @@ export const templates: Record<Goal, Template> = {
       "vertical-push",
       "horizontal-pull",
     ],
-    strengthCount: { 20: 3, 30: 4, 45: 5 },
+    strengthCount: { 20: 3, 30: 4, 45: 5, 60: 6, 75: 7, 90: 8 },
+    prefer: "sets",
     prescription: {
-      beginner: { sets: 3, reps: "8", rest: "90 sec" },
-      intermediate: { sets: 4, reps: "5–6", rest: "2 min" },
-      advanced: { sets: 5, reps: "3–5", rest: "2–3 min" },
+      beginner: { sets: 3, reps: "8", restSeconds: 90 },
+      intermediate: { sets: 4, reps: "5–6", restSeconds: 120 },
+      advanced: { sets: 5, reps: "3–5", restSeconds: 150 },
     },
     accessoryReps: "8–10",
   },
@@ -84,14 +113,15 @@ export const templates: Record<Goal, Template> = {
       "hip-hinge",
       "vertical-push",
     ],
-    strengthCount: { 20: 3, 30: 4, 45: 5 },
-    finisherMinutes: { 20: 5, 30: 6, 45: 8 },
+    strengthCount: { 20: 3, 30: 4, 45: 5, 60: 6, 75: 7, 90: 8 },
+    prefer: "exercises",
+    finisherMinutes: { 20: 4, 30: 6, 45: 8, 60: 10, 75: 12, 90: 15 },
     prescription: {
-      beginner: { sets: 2, reps: "12", rest: "45 sec" },
-      intermediate: { sets: 3, reps: "12", rest: "45 sec" },
-      advanced: { sets: 3, reps: "12–15", rest: "30 sec" },
+      beginner: { sets: 2, reps: "12", restSeconds: 45 },
+      intermediate: { sets: 3, reps: "12", restSeconds: 45 },
+      advanced: { sets: 3, reps: "12–15", restSeconds: 30 },
     },
-    accessoryReps: "10 each side",
+    accessoryReps: "12",
   },
 };
 
@@ -108,5 +138,8 @@ export function isLevel(v: unknown): v is Level {
   return v === "beginner" || v === "intermediate" || v === "advanced";
 }
 export function isDuration(v: unknown): v is Duration {
-  return v === 20 || v === 30 || v === 45;
+  return durations.includes(v as Duration);
+}
+export function isFocusArea(v: unknown): v is FocusArea {
+  return focusAreas.includes(v as FocusArea);
 }

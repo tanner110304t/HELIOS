@@ -1,9 +1,9 @@
-import type { Duration, Equipment, Exercise, Goal, Level } from "@/types/domain";
+import type { Equipment, Exercise, Goal, Level } from "@/types/domain";
 import { generateWorkout } from "./generateWorkout";
+import { durations } from "./templates";
 
 const goals: Goal[] = ["muscle", "strength", "general"];
 const levels: Level[] = ["beginner", "intermediate", "advanced"];
-const durations: Duration[] = [20, 30, 45];
 
 /**
  * Which goals would put this piece of equipment into a generated workout

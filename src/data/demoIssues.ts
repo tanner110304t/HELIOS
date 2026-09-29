@@ -10,9 +10,11 @@ export const issueCategoryLabels: Record<IssueCategory, string> = {
 
 export const issueCategories = Object.keys(issueCategoryLabels) as IssueCategory[];
 
-type SeedIssue = Omit<IssueReport, "reportedAt" | "source"> & {
-  /** Relative age so the demo always reads "2 hours ago", whatever day it is shown. */
+type SeedIssue = Omit<IssueReport, "reportedAt" | "source" | "acknowledgedAt" | "resolvedAt"> & {
+  /** Relative ages so the demo always reads "2 hours ago", whatever day it is shown. */
   minutesAgo: number;
+  acknowledgedMinutesAgo?: number;
+  resolvedMinutesAgo?: number;
 };
 
 /** Pre-loaded demo reports. Fictional. */
@@ -32,8 +34,10 @@ const seedIssues: SeedIssue[] = [
     equipmentId: "eq_leg_extension",
     category: "adjustment",
     description: "Seat pin won't lock in the lower positions.",
-    status: "open",
+    status: "acknowledged",
     minutesAgo: 60 * 26,
+    acknowledgedMinutesAgo: 60 * 24,
+    update: "A replacement part is on order. Out of service until it's fixed.",
   },
   {
     id: "rpt_seed_1027",
@@ -43,13 +47,19 @@ const seedIssues: SeedIssue[] = [
     description: "Grip on the row handle is torn.",
     status: "resolved",
     minutesAgo: 60 * 24 * 6,
+    acknowledgedMinutesAgo: 60 * 24 * 6 - 90,
+    resolvedMinutesAgo: 60 * 24 * 4,
+    update: "New handle grip fitted.",
   },
 ];
 
 export function getSeedIssues(now: number = Date.now()): IssueReport[] {
-  return seedIssues.map(({ minutesAgo, ...issue }) => ({
+  const at = (min?: number) => (min === undefined ? undefined : new Date(now - min * 60_000).toISOString());
+  return seedIssues.map(({ minutesAgo, acknowledgedMinutesAgo, resolvedMinutesAgo, ...issue }) => ({
     ...issue,
-    reportedAt: new Date(now - minutesAgo * 60_000).toISOString(),
+    reportedAt: at(minutesAgo)!,
+    acknowledgedAt: at(acknowledgedMinutesAgo),
+    resolvedAt: at(resolvedMinutesAgo),
     source: "seed",
   }));
 }

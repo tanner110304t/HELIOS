@@ -105,6 +105,7 @@ export const demoExercises: Exercise[] = [
     movementCategory: "vertical-pull",
     difficulty: "advanced",
     instruction: "Pulley high. Pull the handle to your side, keep hips square.",
+    format: "each-side",
   },
   {
     id: "ex_straight_arm_pulldown",
@@ -131,6 +132,7 @@ export const demoExercises: Exercise[] = [
     movementCategory: "horizontal-pull",
     difficulty: "intermediate",
     instruction: "Hand and knee on the bench. Row the dumbbell to your hip.",
+    format: "each-side",
   },
   {
     id: "ex_chest_supported_row",
@@ -197,6 +199,7 @@ export const demoExercises: Exercise[] = [
     movementCategory: "knee-dominant",
     difficulty: "advanced",
     instruction: "Rear foot on the bench. Lower straight down on the front leg.",
+    format: "each-side",
   },
   {
     id: "ex_db_reverse_lunge",
@@ -204,7 +207,8 @@ export const demoExercises: Exercise[] = [
     equipmentIds: ["eq_dumbbells"],
     movementCategory: "knee-dominant",
     difficulty: "intermediate",
-    instruction: "Step back and lower until both knees are near 90°. Alternate legs.",
+    instruction: "Step back and lower until both knees are near 90°. Finish one leg, then the other.",
+    format: "each-side",
   },
 
   // Hip hinge / hamstrings
@@ -309,6 +313,7 @@ export const demoExercises: Exercise[] = [
     movementCategory: "core",
     difficulty: "beginner",
     instruction: "Stand side-on to the pulley. Press straight out and resist the rotation.",
+    format: "each-side",
   },
   {
     id: "ex_farmer_carry",
@@ -316,7 +321,8 @@ export const demoExercises: Exercise[] = [
     equipmentIds: ["eq_dumbbells"],
     movementCategory: "core",
     difficulty: "beginner",
-    instruction: "Heavy dumbbell in each hand. Walk tall for the set distance.",
+    instruction: "Heavy dumbbell in each hand. Walk tall, slow and steady, for the set time.",
+    format: "carry",
   },
   {
     id: "ex_cable_woodchop",
@@ -325,6 +331,66 @@ export const demoExercises: Exercise[] = [
     movementCategory: "core",
     difficulty: "intermediate",
     instruction: "High pulley. Rotate diagonally down across your body.",
+    format: "each-side",
+  },
+
+  // Added for focused and longer sessions
+  {
+    id: "ex_db_incline_press",
+    name: "Incline Dumbbell Press",
+    equipmentIds: ["eq_dumbbells", "eq_benches"],
+    movementCategory: "horizontal-push",
+    difficulty: "intermediate",
+    instruction: "Bench at 30°. Lower the dumbbells to upper-chest level and press up.",
+  },
+  {
+    id: "ex_low_high_cable_fly",
+    name: "Low-to-High Cable Fly",
+    equipmentIds: ["eq_functional_trainer"],
+    movementCategory: "horizontal-push",
+    difficulty: "intermediate",
+    instruction: "Pulleys low. Sweep the handles up and together to chest height.",
+  },
+  {
+    id: "ex_db_rear_delt_fly",
+    name: "Chest-Supported Rear Delt Fly",
+    equipmentIds: ["eq_dumbbells", "eq_benches"],
+    movementCategory: "shoulder-isolation",
+    difficulty: "beginner",
+    instruction: "Chest on a 30° bench. Raise light dumbbells out wide, thumbs down.",
+  },
+  {
+    id: "ex_db_hammer_curl",
+    name: "Dumbbell Hammer Curl",
+    equipmentIds: ["eq_dumbbells"],
+    movementCategory: "arms",
+    difficulty: "beginner",
+    instruction: "Palms facing each other. Curl without swinging.",
+  },
+  {
+    id: "ex_cable_overhead_extension",
+    name: "Cable Overhead Triceps Extension",
+    equipmentIds: ["eq_functional_trainer"],
+    movementCategory: "arms",
+    difficulty: "intermediate",
+    instruction: "Rope on a low pulley, facing away. Extend overhead, elbows stay in.",
+  },
+  {
+    id: "ex_db_step_up",
+    name: "Dumbbell Step-Up",
+    equipmentIds: ["eq_dumbbells", "eq_benches"],
+    movementCategory: "knee-dominant",
+    difficulty: "beginner",
+    instruction: "Step onto a flat bench, drive through the front heel. Finish one leg, then the other.",
+    format: "each-side",
+  },
+  {
+    id: "ex_cable_crunch",
+    name: "Kneeling Cable Crunch",
+    equipmentIds: ["eq_functional_trainer"],
+    movementCategory: "core",
+    difficulty: "intermediate",
+    instruction: "Rope on a high pulley. Curl your ribs toward your hips.",
   },
 
   // Cardio

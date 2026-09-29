@@ -60,6 +60,8 @@ export type Equipment = {
   /** Singular name for one unit, when `name` is plural or numbered (e.g. "Elliptical"). */
   unitName?: string;
   status: EquipmentStatus;
+  /** Why it's out of service (shown to residents). */
+  statusReason?: string;
   /** Where it sits in the room — the context a technician needs. */
   location: string;
   assetTag: string;
@@ -79,6 +81,11 @@ export type Exercise = {
   movementCategory: MovementCategory;
   difficulty: Difficulty;
   instruction: string;
+  /**
+   * How a set is prescribed. Default "reps".
+   * "each-side": reps per arm/leg/side. "carry": a timed walk, not reps.
+   */
+  format?: "reps" | "each-side" | "carry";
 };
 
 export type IssueCategory =
@@ -88,7 +95,8 @@ export type IssueCategory =
   | "noise"
   | "other";
 
-export type IssueStatus = "open" | "resolved";
+/** Reported → Acknowledged → Resolved. Separate from whether the machine is in service. */
+export type IssueStatus = "open" | "acknowledged" | "resolved";
 
 export type IssueReport = {
   id: string;
@@ -101,8 +109,15 @@ export type IssueReport = {
   reportedAt: string;
   /** "seed" = pre-loaded demo data, "live" = submitted during this demo */
   source: "seed" | "live";
+  acknowledgedAt?: string;
+  resolvedAt?: string;
+  /** Short note from the property team that residents can see on the machine page. */
+  update?: string;
 };
 
 export type Goal = "muscle" | "strength" | "general";
 export type Level = Difficulty;
-export type Duration = 20 | 30 | 45;
+export type Duration = 20 | 30 | 45 | 60 | 75 | 90;
+
+/** Body areas a resident can ask a plan to focus on. None selected = full body. */
+export type FocusArea = "chest" | "back" | "shoulders" | "arms" | "legs" | "core";

@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
+import { resetDemo } from "@/lib/demo/client";
 
 /**
  * Presenter-only navigation. Never part of the resident product:
@@ -35,6 +37,30 @@ function DemoLabel() {
   );
 }
 
+/** Clears every report, resolution and other demo state saved in this browser. */
+function ResetDemoButton({ className }: { className?: string }) {
+  const [state, setState] = useState<"idle" | "done" | "failed">("idle");
+  useEffect(() => {
+    if (state === "idle") return;
+    const t = window.setTimeout(() => setState("idle"), 2000);
+    return () => window.clearTimeout(t);
+  }, [state]);
+  return (
+    <button
+      type="button"
+      onClick={() => setState(resetDemo() ? "done" : "failed")}
+      className={cn(
+        "whitespace-nowrap rounded-md px-2.5 py-1 text-[13px] ring-1 ring-inset ring-paper/20 transition-colors hover:bg-paper/10",
+        state === "done" ? "text-sun-glow" : "text-paper/80",
+        className,
+      )}
+      aria-live="polite"
+    >
+      {state === "done" ? "Demo reset ✓" : state === "failed" ? "Reset failed" : "Reset demo"}
+    </button>
+  );
+}
+
 export function DemoModeBar() {
   const pathname = usePathname() ?? "/";
   return (
@@ -60,6 +86,7 @@ export function DemoModeBar() {
             );
           })}
         </ul>
+        <ResetDemoButton className="shrink-0" />
       </div>
     </nav>
   );
@@ -92,6 +119,9 @@ export function DemoFloatingControl() {
             {l.label}
           </Link>
         ))}
+        <div className="mt-1 border-t border-paper/10 px-1 pt-1.5">
+          <ResetDemoButton className="w-full text-left ring-0" />
+        </div>
       </nav>
     </details>
   );

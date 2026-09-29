@@ -8,7 +8,6 @@ import {
   getEquipment,
   getExercisesForEquipment,
   getFacilityBySlug,
-  getSeedIssuesForFacility,
 } from "@/data/repository";
 import type { EquipmentKind } from "@/types/domain";
 
@@ -82,7 +81,7 @@ export default function DealerView() {
         </div>
         <div className="rounded-2xl bg-surface p-5 ring-1 ring-inset ring-line shadow-card">
           <p className="eyebrow">Service connection</p>
-          <ServiceReportCount facilityId={facility.id} seeds={getSeedIssuesForFacility(facility.id)} />
+          <ServiceReportCount facilityId={facility.id} equipment={equipment} />
         </div>
       </section>
 

@@ -2,12 +2,21 @@
 
 import { useState } from "react";
 import { issueCategoryLabels } from "@/data/demoIssues";
-import { reportReference } from "@/lib/issues/client";
+import { setIssueStatus, setServiceStatus } from "@/lib/demo/client";
+import {
+  MAX_UPDATE_LENGTH,
+  issueStatusLabels,
+  isUnresolved,
+  reportReference,
+  returnToServiceWarning,
+  serviceBrief,
+} from "@/lib/demo/state";
+import { cn } from "@/lib/cn";
 import { timeAgo } from "@/lib/time";
 import type { Equipment, Facility, IssueReport } from "@/types/domain";
 import { Badge, IssueStatusBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { IconCheck, IconRefresh } from "@/components/ui/icons";
+import { IconCheck, IconPause } from "@/components/ui/icons";
 import { EquipmentTile } from "@/components/resident/EquipmentGlyph";
 
 export function IssuesPanel({
@@ -15,57 +24,55 @@ export function IssuesPanel({
   equipment,
   facility,
   now,
-  onResolve,
-  onReset,
+  hydrated,
 }: {
   issues: IssueReport[];
   equipment: Equipment[];
   facility: Facility;
   now: number;
-  onResolve: (id: string) => void;
-  onReset: () => void;
+  hydrated: boolean;
 }) {
   const [showResolved, setShowResolved] = useState(false);
   const byId = new Map(equipment.map((e) => [e.id, e]));
-  const open = issues.filter((i) => i.status === "open");
-  const resolved = issues.filter((i) => i.status === "resolved");
-  const hasLive = issues.some((i) => i.source === "live");
+  const active = issues.filter(isUnresolved);
+  const resolved = issues.filter((i) => !isUnresolved(i));
 
   return (
     <section aria-labelledby="issues" className="mt-10">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <h2 id="issues" className="text-lg font-semibold tracking-[-0.01em]">
-            Equipment issues
-          </h2>
-          <span className="inline-flex items-center gap-1.5 text-xs text-muted">
-            <span className="size-1.5 rounded-full bg-ok motion-safe:animate-pulse" aria-hidden />
-            Updates live on this laptop
-          </span>
-        </div>
-        {hasLive && (
-          <Button variant="ghost" onClick={onReset} className="h-8 px-2.5 text-xs text-muted">
-            <IconRefresh className="size-3.5" /> Reset demo reports
-          </Button>
-        )}
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 id="issues" className="text-lg font-semibold tracking-[-0.01em]">
+          Equipment issues
+        </h2>
+        <span className="inline-flex items-center gap-1.5 text-xs text-muted">
+          <span className="size-1.5 rounded-full bg-ok motion-safe:animate-pulse" aria-hidden />
+          Updates live in this browser
+        </span>
       </div>
       <p className="mt-1 text-sm text-muted">
-        Residents tap the machine. Helios already knows which facility, which machine, and where it sits.
+        Residents tap the machine, so each report arrives with the facility, machine and location. Acknowledge it,
+        decide whether the machine should stay in service, and residents see the status on that machine&apos;s page.
       </p>
 
-      <ul className="mt-4 grid gap-3 md:grid-cols-2" aria-live="polite">
-        {open.length === 0 && (
-          <li className="rounded-2xl bg-surface p-5 text-sm text-muted ring-1 ring-inset ring-line md:col-span-2">
-            No open issues.
+      <ul className="mt-4 grid gap-3 lg:grid-cols-2" aria-live="polite">
+        {active.length === 0 && (
+          <li className="rounded-2xl bg-surface p-5 text-sm text-muted ring-1 ring-inset ring-line lg:col-span-2">
+            No unresolved reports.
           </li>
         )}
-        {open.map((issue) => (
-          <IssueCard key={issue.id} issue={issue} eq={byId.get(issue.equipmentId)} facility={facility} now={now}>
-            <Button variant="secondary" onClick={() => onResolve(issue.id)} className="h-9 px-3 text-[13px]">
-              <IconCheck className="size-4" /> Mark resolved
-            </Button>
-          </IssueCard>
-        ))}
+        {active.map((issue) => {
+          const eq = byId.get(issue.equipmentId);
+          return eq ? (
+            <IssueCard
+              key={issue.id}
+              issue={issue}
+              eq={eq}
+              facility={facility}
+              issues={issues}
+              now={now}
+              hydrated={hydrated}
+            />
+          ) : null;
+        })}
       </ul>
 
       {resolved.length > 0 && (
@@ -79,10 +86,21 @@ export function IssuesPanel({
             {showResolved ? "Hide" : "Show"} {resolved.length} resolved
           </button>
           {showResolved && (
-            <ul className="mt-3 grid gap-3 md:grid-cols-2">
-              {resolved.map((issue) => (
-                <IssueCard key={issue.id} issue={issue} eq={byId.get(issue.equipmentId)} facility={facility} now={now} />
-              ))}
+            <ul className="mt-3 grid gap-3 lg:grid-cols-2">
+              {resolved.map((issue) => {
+                const eq = byId.get(issue.equipmentId);
+                return eq ? (
+                  <IssueCard
+                    key={issue.id}
+                    issue={issue}
+                    eq={eq}
+                    facility={facility}
+                    issues={issues}
+                    now={now}
+                    hydrated={hydrated}
+                  />
+                ) : null;
+              })}
             </ul>
           )}
         </div>
@@ -91,57 +109,216 @@ export function IssuesPanel({
   );
 }
 
+function Steps({ issue, now, hydrated }: { issue: IssueReport; now: number; hydrated: boolean }) {
+  const steps = [
+    { label: issueStatusLabels.open, at: issue.reportedAt, done: true },
+    { label: issueStatusLabels.acknowledged, at: issue.acknowledgedAt, done: issue.status !== "open" },
+    { label: issueStatusLabels.resolved, at: issue.resolvedAt, done: issue.status === "resolved" },
+  ];
+  return (
+    <ol className="grid grid-cols-3 gap-2 px-4 pb-3" aria-label="Report progress">
+      {steps.map((s) => (
+        <li key={s.label} className="min-w-0">
+          <div className={cn("h-1 rounded-full", s.done ? "bg-sun" : "bg-paper-2")} aria-hidden />
+          <p className={cn("mt-1.5 text-xs font-medium", s.done ? "text-ink" : "text-muted")}>
+            {s.done ? "✓ " : ""}
+            {s.label}
+          </p>
+          <p className="text-[11px] text-muted">{s.done && s.at && hydrated ? timeAgo(s.at, now) : " "}</p>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 function IssueCard({
   issue,
   eq,
   facility,
+  issues,
   now,
-  children,
+  hydrated,
 }: {
   issue: IssueReport;
-  eq?: Equipment;
+  eq: Equipment;
   facility: Facility;
+  issues: IssueReport[];
   now: number;
-  children?: React.ReactNode;
+  hydrated: boolean;
 }) {
-  const fresh = issue.source === "live" && now - new Date(issue.reportedAt).getTime() < 15 * 60_000;
+  const [note, setNote] = useState("");
+  const [confirmReturn, setConfirmReturn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fresh =
+    hydrated && issue.source === "live" && issue.status === "open" && now - Date.parse(issue.reportedAt) < 15 * 60_000;
+  const outOfService = eq.status !== "available";
+  const noteId = `note-${issue.id}`;
+
+  const act = (ok: boolean) => {
+    setError(ok ? null : "This browser couldn't save that change.");
+    if (ok) setNote("");
+  };
+  const returnWarning = returnToServiceWarning(issues, eq.id);
+
+  const onReturn = () => {
+    if (returnWarning && !confirmReturn) {
+      setConfirmReturn(true);
+      return;
+    }
+    setConfirmReturn(false);
+    act(setServiceStatus(facility.id, eq.id, "available"));
+  };
+
   return (
     <li
-      className={`rounded-2xl bg-surface ring-1 ring-inset shadow-card ${
-        fresh ? "ring-sun/60" : "ring-line"
-      } ${issue.status === "resolved" ? "opacity-75" : ""}`}
+      className={cn(
+        "flex flex-col rounded-2xl bg-surface ring-1 ring-inset shadow-card",
+        fresh ? "ring-sun/60" : "ring-line",
+      )}
     >
-      <div className="flex items-start gap-3.5 p-4">
-        {eq && <EquipmentTile kind={eq.kind} className="size-12" />}
+      <div className="flex items-start gap-3.5 p-4 pb-3">
+        <EquipmentTile kind={eq.kind} className="size-12" dimmed={outOfService} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-[15px] font-semibold">{eq?.name ?? issue.equipmentId}</h3>
+            <h3 className="text-[15px] font-semibold">{eq.name}</h3>
             {fresh && <Badge tone="sun">New</Badge>}
           </div>
           <p className="mt-0.5 text-sm font-medium text-ink-3">{issueCategoryLabels[issue.category]}</p>
           <p className="mt-0.5 text-xs text-muted">
-            Reported {timeAgo(issue.reportedAt, now).toLowerCase()} · {reportReference(issue.id)}
+            {hydrated ? `Reported ${timeAgo(issue.reportedAt, now).toLowerCase()} · ` : ""}
+            {reportReference(issue.id)}
           </p>
         </div>
         <IssueStatusBadge status={issue.status} />
       </div>
+
+      <Steps issue={issue} now={now} hydrated={hydrated} />
+
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 border-t border-line px-4 py-3 text-[13px]">
         <dt className="text-muted">Facility</dt>
         <dd>{facility.name}</dd>
-        {eq && (
+        <dt className="text-muted">Equipment</dt>
+        <dd>
+          {eq.name}
+          {eq.quantity > 1 && <span className="text-muted"> (group of {eq.quantity})</span>}{" "}
+          <span className="font-mono text-[12px] text-muted">· {eq.assetTag}</span>
+        </dd>
+        <dt className="text-muted">Location</dt>
+        <dd>{eq.location}</dd>
+        <dt className="text-muted">Resident note</dt>
+        <dd className={issue.description ? "" : "text-muted"}>{issue.description ?? "None"}</dd>
+        <dt className="text-muted">Machine</dt>
+        <dd className={outOfService ? "font-medium text-down" : ""}>
+          {outOfService ? `Out of service${eq.statusReason ? ` — ${eq.statusReason}` : ""}` : "In service"}
+        </dd>
+        {issue.update && (
           <>
-            <dt className="text-muted">Equipment</dt>
-            <dd>
-              {eq.name} <span className="font-mono text-[12px] text-muted">· {eq.assetTag}</span>
-            </dd>
-            <dt className="text-muted">Location</dt>
-            <dd>{eq.location}</dd>
+            <dt className="text-muted">Residents see</dt>
+            <dd>&ldquo;{issue.update}&rdquo;</dd>
           </>
         )}
-        <dt className="text-muted">Resident note</dt>
-        <dd className={issue.description ? "" : "text-faint"}>{issue.description ?? "None"}</dd>
       </dl>
-      {children && <div className="flex justify-end border-t border-line px-4 py-2.5">{children}</div>}
+
+      <div className="mt-auto space-y-2.5 border-t border-line px-4 py-3">
+        {isUnresolved(issue) && (
+          <div>
+            <label htmlFor={noteId} className="text-xs font-medium text-ink-3">
+              Update for residents <span className="font-normal text-muted">(optional, shown on the machine page)</span>
+            </label>
+            <input
+              id={noteId}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={MAX_UPDATE_LENGTH}
+              placeholder="e.g. Technician visit booked for Thursday"
+              className="mt-1 block h-9 w-full rounded-lg bg-paper px-3 text-[13px] ring-1 ring-inset ring-line placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-sun"
+            />
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {issue.status === "open" && (
+            <Button
+              variant="primary"
+              className="h-9 px-3 text-[13px]"
+              onClick={() => act(setIssueStatus(facility.id, issue, "acknowledged", note))}
+            >
+              Acknowledge
+            </Button>
+          )}
+          {isUnresolved(issue) && (
+            <Button
+              variant="secondary"
+              className="h-9 px-3 text-[13px]"
+              onClick={() => act(setIssueStatus(facility.id, issue, "resolved", note))}
+            >
+              <IconCheck className="size-4" /> Mark resolved
+            </Button>
+          )}
+          {!outOfService && isUnresolved(issue) && (
+            <Button
+              variant="secondary"
+              className="h-9 px-3 text-[13px]"
+              title={eq.quantity > 1 ? `Takes all ${eq.quantity} units out of Helios plans` : undefined}
+              onClick={() =>
+                act(setServiceStatus(facility.id, eq.id, "unavailable", `${issueCategoryLabels[issue.category]} reported`))
+              }
+            >
+              <IconPause className="size-4" />
+              {eq.quantity > 1 ? `Take all ${eq.quantity} out of service` : "Take out of service"}
+            </Button>
+          )}
+          {outOfService && (
+            <Button variant="secondary" className="h-9 px-3 text-[13px]" onClick={onReturn}>
+              {confirmReturn ? "Return anyway" : "Return to service"}
+            </Button>
+          )}
+          <CopyBrief text={serviceBrief(facility, eq, issue)} />
+        </div>
+        {confirmReturn && returnWarning && (
+          <p className="text-xs text-warn" role="alert">
+            {returnWarning} Return it to service anyway?
+          </p>
+        )}
+        {error && (
+          <p className="text-xs text-down" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
     </li>
+  );
+}
+
+/** Copies a plain-text brief. Shows the text to copy by hand if the clipboard isn't available. */
+function CopyBrief({ text }: { text: string }) {
+  const [state, setState] = useState<"idle" | "copied" | "manual">("idle");
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setState("copied");
+      window.setTimeout(() => setState("idle"), 2000);
+    } catch {
+      setState("manual");
+    }
+  };
+  return (
+    <>
+      <Button variant="ghost" className="h-9 px-3 text-[13px] ring-1 ring-inset ring-line" onClick={copy}>
+        {state === "copied" ? "Copied ✓" : "Copy service brief"}
+      </Button>
+      {state === "manual" && (
+        <div className="w-full">
+          <p className="text-xs text-muted">Couldn&apos;t copy automatically. Select the text below and copy it.</p>
+          <textarea
+            readOnly
+            value={text}
+            rows={7}
+            aria-label="Service brief"
+            onFocus={(e) => e.currentTarget.select()}
+            className="mt-1 w-full rounded-lg bg-paper p-2 font-mono text-[11px] ring-1 ring-inset ring-line"
+          />
+        </div>
+      )}
+    </>
   );
 }

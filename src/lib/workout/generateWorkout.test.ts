@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import { demoEquipment } from "@/data/demoEquipment";
 import { demoExercises } from "@/data/demoExercises";
 import type { Duration, Equipment, Goal, Level } from "@/types/domain";
-import { generateWorkout } from "./generateWorkout";
+import { generateWorkout, repsText } from "./generateWorkout";
+import { durations as allDurations, focusAreas, focusCategories, templates } from "./templates";
+import { strengthSeconds } from "./timeModel";
 
 const goals: Goal[] = ["muscle", "strength", "general"];
 const levels: Level[] = ["beginner", "intermediate", "advanced"];
-const durations: Duration[] = [20, 30, 45];
+const durations: Duration[] = allDurations;
 
 const room = { equipment: demoEquipment, exercises: demoExercises };
 
@@ -47,16 +49,80 @@ describe("generateWorkout", () => {
     expect(ids).not.toContain("eq_lat_pulldown");
   });
 
-  it("returns more exercises for longer sessions", () => {
-    for (const goal of goals) {
-      for (const level of levels) {
-        const counts = durations.map(
-          (duration) => generateWorkout({ goal, level, duration }, room).items.length,
-        );
-        expect(counts[0]).toBeLessThan(counts[1]);
-        expect(counts[1]).toBeLessThan(counts[2]);
+  it("fits every goal/level/length combination inside its time budget", () => {
+    for (const request of allCombos) {
+      const w = generateWorkout(request, room);
+      expect(w.items.length).toBeGreaterThan(0);
+      // The estimate is the documented arithmetic, not a separate guess.
+      const seconds =
+        (w.warmup?.estimatedSeconds ?? 0) + w.items.reduce((a, i) => a + i.estimatedSeconds, 0);
+      expect(w.estimatedMinutes).toBe(Math.round(seconds / 60));
+      expect(seconds).toBeLessThanOrEqual(request.duration * 60);
+      for (const item of w.items.filter((i) => i.kind === "strength")) {
+        const rest = templates[request.goal].prescription[request.level].restSeconds;
+        expect(item.restSeconds).toBe(rest); // rest is never cut to make time
+        expect(item.estimatedSeconds).toBe(strengthSeconds(item.exercise, item.sets!, rest));
+        expect(item.sets!).toBeGreaterThanOrEqual(2);
       }
     }
+  });
+
+  it("gives longer sessions more total work", () => {
+    for (const goal of goals) {
+      for (const level of levels) {
+        const work = durations.map((duration) =>
+          generateWorkout({ goal, level, duration }, room)
+            .items.filter((i) => i.kind === "strength")
+            .reduce((a, i) => a + i.sets!, 0),
+        );
+        expect(work[0]).toBeLessThan(work[1]);
+        expect(work[1]).toBeLessThan(work[2]);
+      }
+    }
+  });
+
+  it("keeps a focused plan to the chosen body areas", () => {
+    for (const area of focusAreas) {
+      for (const level of levels) {
+        const w = generateWorkout({ goal: "muscle", level, duration: 45, focus: [area] }, room);
+        const strength = w.items.filter((i) => i.kind === "strength");
+        expect(strength.length).toBeGreaterThan(0);
+        for (const item of strength) {
+          expect(focusCategories[area]).toContain(item.exercise.movementCategory);
+          for (const alt of item.alternatives) {
+            expect(focusCategories[area]).toContain(alt.exercise.movementCategory);
+          }
+        }
+        expect(w.estimatedMinutes).toBeLessThanOrEqual(45);
+      }
+    }
+  });
+
+  it("says when a narrow focus can't fill a long session instead of padding it", () => {
+    const w = generateWorkout({ goal: "muscle", level: "beginner", duration: 90, focus: ["core"] }, room);
+    expect(w.shortOfTime).toBe(true);
+    expect(w.estimatedMinutes).toBeLessThan(90 * 0.75);
+    const full = generateWorkout({ goal: "muscle", level: "intermediate", duration: 90 }, room);
+    expect(full.shortOfTime).toBe(false);
+  });
+
+  it("describes one-sided and carry exercises correctly", () => {
+    const w = generateWorkout({ goal: "muscle", level: "intermediate", duration: 30 }, room);
+    const row = w.items.find((i) => i.exercise.id === "ex_one_arm_db_row");
+    expect(row?.reps).toBe("8–12 reps each side");
+    const carry = demoExercises.find((e) => e.id === "ex_farmer_carry")!;
+    expect(repsText(carry, "12")).toBe("30–40 sec walk");
+  });
+
+  it("returns an honest empty plan when the room can't support one", () => {
+    const allDown = demoEquipment.map((e) => ({ ...e, status: "unavailable" as const }));
+    const w = generateWorkout(
+      { goal: "muscle", level: "beginner", duration: 30 },
+      { equipment: allDown, exercises: demoExercises },
+    );
+    expect(w.items).toHaveLength(0);
+    expect(w.warmup).toBeNull();
+    expect(w.estimatedMinutes).toBe(0);
   });
 
   it("only uses equipment that is in this room and available", () => {

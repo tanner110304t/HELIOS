@@ -1,7 +1,9 @@
 import type { Duration, Goal } from "@/types/domain";
 
 /**
- * DEMO DATA — fictional Helios engagement for one 284-unit property, last 30 days.
+ * DEMO DATA — fictional Helios engagement for one 284-unit property over a fixed
+ * 28-day sample period (four full weeks, Aug 31 – Sep 27, 2026). Fixed dates so
+ * the sample doesn't pretend to be "the last 30 days" whenever it is shown.
  *
  * These count only activity inside Helios (QR sessions, workouts built and
  * checked off, machine pages opened). They say nothing about total gym
@@ -9,7 +11,7 @@ import type { Duration, Goal } from "@/types/domain";
  * weekly/per-item series below so the numbers always agree with each other.
  */
 
-export const analyticsWindowLabel = "Last 30 days";
+export const analyticsWindowLabel = "Sample period · Aug 31 – Sep 27, 2026";
 
 export type WeeklyEngagement = {
   label: string;
@@ -34,9 +36,12 @@ export const deviceStats = {
 
 /** Share of generated workouts by selected length (percent, sums to 100). */
 export const durationMix: { duration: Duration; share: number }[] = [
-  { duration: 20, share: 31 },
-  { duration: 30, share: 46 },
-  { duration: 45, share: 23 },
+  { duration: 20, share: 24 },
+  { duration: 30, share: 38 },
+  { duration: 45, share: 22 },
+  { duration: 60, share: 11 },
+  { duration: 75, share: 3 },
+  { duration: 90, share: 2 },
 ];
 
 /** Share of generated workouts by selected goal (percent, sums to 100). */

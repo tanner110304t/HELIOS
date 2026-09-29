@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { issueCategories, issueCategoryLabels } from "@/data/demoIssues";
 import { cn } from "@/lib/cn";
-import { reportReference, submitIssueReport } from "@/lib/issues/client";
+import { submitIssueReport } from "@/lib/demo/client";
+import { reportReference } from "@/lib/demo/state";
 import type { Equipment, Facility, IssueCategory } from "@/types/domain";
 import { buttonClass } from "@/components/ui/Button";
 import { IconBuilding, IconCheck, IconPin, IconTag } from "@/components/ui/icons";
@@ -15,19 +16,23 @@ const MAX = 280;
 export function ReportForm({ facility, equipment }: { facility: Facility; equipment: Equipment }) {
   const [category, setCategory] = useState<IssueCategory | null>(null);
   const [description, setDescription] = useState("");
-  const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "failed">("idle");
   const [reference, setReference] = useState<string | null>(null);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!category || state !== "idle") return;
+    if (!category || state === "sending" || state === "sent") return;
     setState("sending");
-    const report = submitIssueReport({
+    const { report, saved } = submitIssueReport({
       facilityId: facility.id,
       equipmentId: equipment.id,
       category,
       description,
     });
+    if (!saved) {
+      setState("failed");
+      return;
+    }
     setReference(reportReference(report.id));
     setState("sent");
   }
@@ -68,11 +73,22 @@ export function ReportForm({ facility, equipment }: { facility: Facility; equipm
           <IconCheck className="size-7" />
         </span>
         <h1 className="mt-5 text-[24px] font-semibold leading-[1.2] tracking-[-0.025em]">
-          Thanks — the facility team now has the equipment details they need.
+          Thanks — your report includes the exact machine and where it is.
         </h1>
         <p className="mt-2 text-sm text-muted">
           Reference <span className="font-mono text-ink-3">{reference}</span> ·{" "}
           {category && issueCategoryLabels[category]}
+        </p>
+        <p className="mt-2 text-sm text-ink-3">
+          Its status shows on the{" "}
+          <Link href={`/g/${facility.slug}/equipment/${equipment.slug}`} className="font-medium text-sun-ink underline underline-offset-2">
+            {equipment.name} page
+          </Link>{" "}
+          as the property team works on it.
+        </p>
+        <p className="mt-3 rounded-xl bg-paper-2 px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-3">
+          <span className="font-semibold">Demo:</span> this report is saved in this browser only. No message was sent
+          to property staff.
         </p>
         <div className="mt-6">{context}</div>
         <div className="mt-6 grid gap-2">
@@ -89,6 +105,12 @@ export function ReportForm({ facility, equipment }: { facility: Facility; equipm
 
   return (
     <form onSubmit={onSubmit} className="pt-2">
+      {state === "failed" && (
+        <p role="alert" className="mb-5 rounded-xl bg-down-soft px-3.5 py-3 text-[13px] leading-relaxed text-down">
+          <span className="font-semibold">Your report wasn&apos;t saved.</span> This browser blocked saving (private
+          browsing can do this). Try again, or tell the front desk about the problem.
+        </p>
+      )}
       <h1 className="text-[26px] font-semibold leading-[1.15] tracking-[-0.025em]">Report a Problem</h1>
       <p className="mt-1.5 text-sm text-muted">We&apos;ll attach these details for you.</p>
 

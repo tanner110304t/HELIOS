@@ -5,11 +5,10 @@
  * static imports below with database / API calls (and making these async) is
  * the path to a real backend — components don't import demo files directly.
  */
-import type { Equipment, Exercise, Facility, IssueReport } from "@/types/domain";
+import type { Equipment, Exercise, Facility } from "@/types/domain";
 import { demoFacility } from "./demoFacility";
 import { demoEquipment } from "./demoEquipment";
 import { demoExercises } from "./demoExercises";
-import { getSeedIssues } from "./demoIssues";
 
 const facilities: Facility[] = [demoFacility];
 const equipmentByFacility: Record<string, Equipment[]> = {
@@ -55,17 +54,3 @@ export function getExercisesForEquipment(equipmentId: string): Exercise[] {
 
 /** Demo shortcut: the one facility this build shows. */
 export const DEMO_FACILITY_SLUG = demoFacility.slug;
-
-/** Pre-seeded demo reports for a facility (new reports live in the browser — see lib/issues/client.ts). */
-export function getSeedIssuesForFacility(facilityId: string, now?: number): IssueReport[] {
-  return getSeedIssues(now).filter((i) => i.facilityId === facilityId);
-}
-
-/** Equipment that already has an open seeded report — shown to residents as "already reported". */
-export function getEquipmentWithOpenReports(facilityId: string): Set<string> {
-  return new Set(
-    getSeedIssuesForFacility(facilityId)
-      .filter((i) => i.status === "open")
-      .map((i) => i.equipmentId),
-  );
-}

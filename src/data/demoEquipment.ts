@@ -125,6 +125,7 @@ export const demoEquipment: Equipment[] = [
     kind: "selectorized",
     quantity: 1,
     status: "unavailable",
+    statusReason: "Seat adjustment needs a replacement part.",
     location: "Strength area · row 2",
     assetTag: "SL-FC-007",
     trains: ["Quads"],

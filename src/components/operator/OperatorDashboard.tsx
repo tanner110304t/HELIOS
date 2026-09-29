@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import type { WeeklyEngagement } from "@/data/demoAnalytics";
-import { useFacilityIssues } from "@/lib/issues/client";
-import { openIssueCountByEquipment } from "@/lib/issues/merge";
+import { useFacilityState } from "@/lib/demo/client";
+import { isUnresolved } from "@/lib/demo/state";
 import { goalLabels } from "@/lib/workout/templates";
-import type { Duration, Equipment, Facility, Goal, IssueReport } from "@/types/domain";
+import type { Duration, Equipment, Facility, Goal } from "@/types/domain";
 import { Badge, DemoDataBadge } from "@/components/ui/Badge";
 import { EngagementChart, ShareBars } from "./Charts";
 import { InventoryTable } from "./InventoryTable";
@@ -42,26 +42,25 @@ function Kpi({ label, value, note, tone }: { label: string; value: number | stri
 
 export function OperatorDashboard({
   facility,
-  equipment,
-  seedIssues,
-  now: serverNow,
+  equipment: seedEquipment,
   analytics,
 }: {
   facility: Facility;
   equipment: Equipment[];
-  seedIssues: IssueReport[];
-  now: number;
   analytics: AnalyticsProps;
 }) {
-  const { issues, resolve, reset } = useFacilityIssues(facility.id, seedIssues);
-  const [now, setNow] = useState(serverNow);
+  const { issues, equipment, hydrated, now: loadedAt } = useFacilityState(facility.id, seedEquipment);
+  const [now, setNow] = useState(loadedAt);
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 30_000);
     return () => window.clearInterval(t);
   }, []);
 
-  const openCounts = openIssueCountByEquipment(issues);
-  const openIssues = issues.filter((i) => i.status === "open").length;
+  const unresolved = issues.filter(isUnresolved);
+  const openCounts = new Map<string, number>();
+  for (const i of unresolved) openCounts.set(i.equipmentId, (openCounts.get(i.equipmentId) ?? 0) + 1);
+  const openIssues = unresolved.length;
+  const outOfService = equipment.filter((e) => e.status !== "available").length;
   const s = analytics.summary;
 
   return (
@@ -89,15 +88,15 @@ export function OperatorDashboard({
 
       {/* KPIs */}
       <section aria-label="Helios engagement summary" className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-        <Kpi label="Helios visits" value={s.heliosVisits} note="QR sessions opened" />
+        <Kpi label="Helios sessions" value={s.heliosVisits} note="Resident sessions in Helios" />
         <Kpi label="Workouts generated" value={s.workoutsGenerated} />
         <Kpi label="Helios workouts completed" value={s.workoutsCompleted} note={`${s.completionRate}% of generated`} />
         <Kpi label="Repeat Helios devices" value={s.repeatDevices} note={`of ${s.uniqueDevices} devices, 2+ days`} />
         <Kpi label="Equipment-page views" value={s.equipmentPageViews} />
         <Kpi
-          label="Open equipment issues"
+          label="Unresolved equipment reports"
           value={openIssues}
-          note={openIssues ? "Needs attention" : "All clear"}
+          note={`${openCounts.size} machine${openCounts.size === 1 ? "" : "s"} · ${outOfService} out of service`}
           tone={openIssues ? "warn" : undefined}
         />
       </section>
@@ -108,8 +107,7 @@ export function OperatorDashboard({
         equipment={equipment}
         facility={facility}
         now={now}
-        onResolve={resolve}
-        onReset={reset}
+        hydrated={hydrated}
       />
 
       {/* Engagement */}
@@ -140,7 +138,13 @@ export function OperatorDashboard({
       </section>
 
       {/* Inventory */}
-      <InventoryTable equipment={equipment} pageViews={analytics.pageViews} openCounts={openCounts} />
+      <InventoryTable
+        facilityId={facility.id}
+        equipment={equipment}
+        issues={issues}
+        pageViews={analytics.pageViews}
+        openCounts={openCounts}
+      />
     </main>
   );
 }

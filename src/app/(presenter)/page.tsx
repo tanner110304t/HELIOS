@@ -16,12 +16,13 @@ const RESIDENT_PATH = `/g/${DEMO_FACILITY_SLUG}`;
 export default function MeetingOverview() {
   const facility = getFacilityBySlug(DEMO_FACILITY_SLUG)!;
   const equipment = getEquipment(facility.id);
+  const units = equipment.reduce((a, e) => a + e.quantity, 0);
 
   const steps = [
     {
       n: "01",
       title: "Equipment list",
-      body: `The dealer's install list. ${equipment.length} pieces at ${facility.propertyName}.`,
+      body: `The dealer's install list: ${equipment.length} equipment entries, ${units} units at ${facility.propertyName}.`,
       icon: IconList,
     },
     {

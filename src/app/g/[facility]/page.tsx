@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChoiceGroup } from "@/components/resident/ChoiceGroup";
+import { ServiceSummary } from "@/components/resident/ServiceSummary";
 import { ResidentFooter, ResidentHeader, ResidentMain } from "@/components/resident/ResidentChrome";
 import { buttonClass } from "@/components/ui/Button";
 import { IconArrowRight, IconGrid, IconWrench } from "@/components/ui/icons";
 import { getEquipment, getFacilityBySlug } from "@/data/repository";
-import { durations, goalLabels, levelLabels } from "@/lib/workout/templates";
+import { durations, focusAreas, focusLabels, goalLabels, levelLabels } from "@/lib/workout/templates";
 
 /** Screen 1 — what a resident sees right after scanning the QR code in the room. */
 export default async function FacilityWelcome({ params }: PageProps<"/g/[facility]">) {
@@ -13,7 +14,6 @@ export default async function FacilityWelcome({ params }: PageProps<"/g/[facilit
   const facility = getFacilityBySlug(slug);
   if (!facility) notFound();
   const equipment = getEquipment(facility.id);
-  const available = equipment.filter((e) => e.status === "available").length;
 
   return (
     <>
@@ -21,10 +21,7 @@ export default async function FacilityWelcome({ params }: PageProps<"/g/[facilit
       <ResidentMain>
         <div className="pt-4">
           <h1 className="text-[26px] font-semibold leading-[1.15] tracking-[-0.025em]">{facility.name}</h1>
-          <p className="mt-2 flex items-center gap-2 text-sm text-muted">
-            <span className="inline-block size-1.5 rounded-full bg-ok" aria-hidden />
-            {available} of {equipment.length} pieces of equipment available now
-          </p>
+          <ServiceSummary facilityId={facility.id} equipment={equipment} />
         </div>
 
         <form action={`/g/${facility.slug}/workout`} method="get" className="mt-3">
@@ -38,6 +35,13 @@ export default async function FacilityWelcome({ params }: PageProps<"/g/[facilit
               { value: "strength", label: goalLabels.strength, hint: "Heavier, fewer reps" },
               { value: "general", label: goalLabels.general, hint: "Strength + cardio" },
             ]}
+          />
+          <ChoiceGroup
+            legend="Focus on"
+            hint="Optional · leave blank for full body"
+            name="focus"
+            multiple
+            options={focusAreas.map((f) => ({ value: f, label: focusLabels[f] }))}
           />
           <ChoiceGroup
             legend="Experience"

@@ -1,27 +1,35 @@
 import { cn } from "@/lib/cn";
 
 /**
- * Large, thumb-friendly radio cards. Native radios underneath, so it works
- * with keyboard, screen readers, and without JavaScript.
+ * Large, thumb-friendly choice cards. Native radios (or checkboxes when
+ * `multiple`) underneath, so it works with keyboard, screen readers, and
+ * without JavaScript.
  */
 export function ChoiceGroup({
   legend,
+  hint,
   name,
   options,
   defaultValue,
   columns = 3,
   required,
+  multiple = false,
 }: {
   legend: string;
+  hint?: string;
   name: string;
   options: { value: string; label: string; hint?: string }[];
   defaultValue?: string;
   columns?: 1 | 3;
   required?: boolean;
+  multiple?: boolean;
 }) {
   return (
     <fieldset className="mt-7">
-      <legend className="mb-2.5 text-[15px] font-semibold tracking-[-0.01em] text-ink">{legend}</legend>
+      <legend className="mb-2.5 text-[15px] font-semibold tracking-[-0.01em] text-ink">
+        {legend}
+        {hint && <span className="ml-1.5 text-[13px] font-normal text-muted">{hint}</span>}
+      </legend>
       <div className={cn("grid gap-2", columns === 3 ? "grid-cols-3" : "grid-cols-1")}>
         {options.map((o) => (
           <label
@@ -35,11 +43,11 @@ export function ChoiceGroup({
             )}
           >
             <input
-              type="radio"
+              type={multiple ? "checkbox" : "radio"}
               name={name}
               value={o.value}
               defaultChecked={o.value === defaultValue}
-              required={required}
+              required={multiple ? undefined : required}
               className="peer sr-only"
             />
             <span className="text-[15px] font-medium leading-tight">{o.label}</span>

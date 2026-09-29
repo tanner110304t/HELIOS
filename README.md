@@ -56,16 +56,27 @@ All fictional, all typed, all in `src/data/`:
 
 1. Keep only equipment in the room that is **available**.
 2. Keep exercises whose required equipment is all available and whose difficulty suits the level.
-3. Fill the goal's movement slots (`templates.ts`) in order until the session length is reached. Prefer the level's difficulty, then an unused machine.
-4. Add a cardio warm-up (and a finisher for General Fitness).
-5. Swap options = other eligible exercises for the same slot.
+3. Pick candidates for the goal's movement slots (`templates.ts`) — narrowed to the resident's **focus areas** if they chose any (chest, back, shoulders, arms, legs & glutes, core) — preferring the level's difficulty, then an unused machine. Longer sessions go round the slots again with new exercises.
+4. Add a cardio warm-up (3 min for 20-minute sessions, 5 up to 45, 8 for 60–90) and a finisher for General Fitness.
+5. **Fit to time** (`timeModel.ts`): keep as many exercises and sets as fit the chosen length. Rest is never cut. Minimum 2 sets.
+6. Swap options = other eligible exercises for the same slot.
+
+Time assumptions (estimates, not measurements): 40 sec per set (70 sec for one-side-at-a-time), rest only *between* sets, 60 sec to move and set up per exercise. The workout screen shows "about N min", which is always within the chosen length (20–90 min). If the room can't fill most of the time for the chosen focus and level, the plan says so instead of padding.
 
 Same inputs → same workout. A different room → a different workout.
 
-## Issue reports
+## Equipment service loop
 
-Reports are saved in the browser (`localStorage`) — see `src/lib/issues/client.ts`.
-A report filed **on the laptop** (including inside the phone frame on `/demo/resident`) shows up on the operator dashboard immediately. A report filed on someone else's phone stays on that phone. "Reset demo reports" on the dashboard clears them.
+All changes made during a demo live in one small versioned record in the browser (`src/lib/demo/`):
+
+- **Reports** move **Reported → Acknowledged → Resolved**, with timestamps and an optional short update from the property team that residents see on the machine page.
+- **Service status** is separate. The operator explicitly takes a machine **out of service** or **returns it to service** (from an issue card or the inventory table). Resolving a report does *not* put a machine back, and returning one that still has unresolved reports asks for a second click.
+- Resident equipment pages, the welcome screen and **new workouts** all use the same live status. A workout already in progress isn't rewritten; the affected exercise is flagged with in-service alternatives.
+- **Copy service brief** puts a plain-text summary (facility, machine, asset tag, location, issue, time, reference, status) on the clipboard, for whatever channel the property already uses with its service provider. Nothing is sent.
+
+Every page open **in this browser** (tabs, and the phone frame on `/demo/resident`) updates immediately. Another device (e.g. a dealer's phone) keeps its own separate record; the resident receipt says so.
+
+**Reset demo** (in the dark presenter bar, always visible) clears everything saved in this browser so each meeting starts the same way.
 
 ## Deploy to Vercel
 
@@ -79,10 +90,10 @@ Note: on `localhost` the QR can't be opened by a phone — use the deployed URL 
 
 ## What is intentionally fake
 
-- **Analytics** — every number is fictional and labeled Demo Data
+- **Analytics** — every number is fictional, labeled Demo Data, over a fixed sample period (Aug 31 – Sep 27, 2026)
 - **Property** — Solstice Lofts does not exist
 - **Equipment data** — generic, hand-written; setup copy is original placeholder text
-- **Issue routing** — nothing is emailed or sent anywhere; reports live in the browser
+- **Issue routing and service status** — nothing is emailed or sent anywhere; reports and status changes live in this browser only
 - **Authentication** — none
 - **Backend persistence** — none (no database, no Redis)
 

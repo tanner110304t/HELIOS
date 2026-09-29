@@ -57,28 +57,36 @@ export function EquipmentStatusBadge({
   if (status === "unavailable")
     return (
       <Badge tone="down">
-        <IconPause className="size-3.5" /> Temporarily Unavailable
+        <IconPause className="size-3.5" /> Out of service
       </Badge>
     );
   if (attention)
     return (
       <Badge tone="warn">
-        <IconAlert className="size-3.5" /> Available · Issue reported
+        <IconAlert className="size-3.5" /> In service · Issue reported
       </Badge>
     );
   return (
     <Badge tone="ok">
-      <IconCheck className="size-3.5" /> Available
+      <IconCheck className="size-3.5" /> In service
     </Badge>
   );
 }
 
 export function IssueStatusBadge({ status }: { status: IssueStatus }) {
-  return status === "open" ? (
-    <Badge tone="warn">
-      <span className="size-1.5 rounded-full bg-warn" aria-hidden /> Open
-    </Badge>
-  ) : (
+  if (status === "open")
+    return (
+      <Badge tone="warn">
+        <span className="size-1.5 rounded-full bg-warn" aria-hidden /> Open
+      </Badge>
+    );
+  if (status === "acknowledged")
+    return (
+      <Badge tone="sun">
+        <IconCheck className="size-3.5" /> Acknowledged
+      </Badge>
+    );
+  return (
     <Badge tone="neutral">
       <IconCheck className="size-3.5" /> Resolved
     </Badge>
